@@ -85,12 +85,12 @@ const resendOTP = asyncHandler(async (req, res) => {
   const otp = user.generateOTP();
   await user.save();
 
-  const text = `Your OTP is: ${otp}`;
-  const html = `<p>Your OTP is: <strong>${otp}</strong></p>`;
-  await sendEmail({ to: user.email, subject: 'Verify your email', text, html });
+  const text = `Your new OTP is: ${otp}`;
+  const html = `<p>Your new OTP is: <strong>${otp}</strong></p>`;
+  await sendEmail({ to: user.email, subject: 'Resend OTP', text, html });
 
   res.status(200).json({
-    message: 'OTP has been resent. Please check your email.',
+    message: 'OTP resent successfully. Please check your email for the new OTP.',
   });
 });
 
@@ -173,4 +173,65 @@ const resetPassword = asyncHandler(async (req, res) => {
   });
 });
 
-module.exports = { registerUser, verifyOTP, resendOTP, authUser, forgotPassword, resetPassword };
+// @desc    Get user profile
+// @route   GET /api/users/profile
+// @access  Private
+const getUserProfile = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+
+  if (user) {
+    res.json({
+      _id: user._id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      email: user.email,
+      phone: user.phone,
+    });
+  } else {
+    res.status(404);
+    throw new Error('User not found');
+  }
+});
+
+// @desc    Update user profile
+// @route   PUT /api/users/profile
+// @access  Private
+const updateUserProfile = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+
+  if (user) {
+    user.firstName = req.body.firstName || user.firstName;
+    user.lastName = req.body.lastName || user.lastName;
+    user.email = req.body.email || user.email;
+    user.phone = req.body.phone || user.phone;
+
+    if (req.body.password) {
+      user.password = req.body.password;
+    }
+
+    const updatedUser = await user.save();
+
+    res.json({
+      _id: updatedUser._id,
+      firstName: updatedUser.firstName,
+      lastName: updatedUser.lastName,
+      email: updatedUser.email,
+      phone: updatedUser.phone,
+      token: generateToken(updatedUser._id),
+    });
+  } else {
+    res.status(404);
+    throw new Error('User not found');
+  }
+});
+
+module.exports = {
+  registerUser,
+  verifyOTP,
+  resendOTP,
+  authUser,
+  forgotPassword,
+  resetPassword,
+  getUserProfile,
+  updateUserProfile,
+};
