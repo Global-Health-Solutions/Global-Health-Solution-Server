@@ -1,33 +1,49 @@
-const asyncHandler = require('express-async-handler');
-const User = require('../models/User');
-const generateToken = require('../utils/generateToken');
-const verifyRecaptcha = require('../utils/recaptcha');
-const sendEmail = require('../utils/sendEmail');
-const crypto = require('crypto');
+const asyncHandler = require("express-async-handler");
+const User = require("../models/User");
+const generateToken = require("../utils/generateToken");
+const verifyRecaptcha = require("../utils/recaptcha");
+const sendEmail = require("../utils/sendEmail");
+const crypto = require("crypto");
 
 // @desc    Register a new user
 // @route   POST /api/users
 // @access  Public
 const registerUser = asyncHandler(async (req, res) => {
-  const { firstName, lastName, email, phone, password, agreeTerms, recaptcha } = req.body;
+  const {
+    firstName,
+    lastName,
+    dateOfBirth,
+    gender,
+    address,
+    country,
+    email,
+    phone,
+    password,
+    agreeTerms,
+    recaptcha,
+  } = req.body;
 
   // Validate reCAPTCHA
   const recaptchaValid = await verifyRecaptcha(recaptcha);
   if (!recaptchaValid) {
     res.status(400);
-    throw new Error('reCAPTCHA validation failed. Please try again.');
+    throw new Error("reCAPTCHA validation failed. Please try again.");
   }
 
   const userExists = await User.findOne({ email });
 
   if (userExists) {
     res.status(400);
-    throw new Error('User already exists');
+    throw new Error("User already exists");
   }
 
   const user = await User.create({
     firstName,
     lastName,
+    dateOfBirth,
+    gender,
+    address,
+    country,
     email,
     phone,
     password,
@@ -39,10 +55,11 @@ const registerUser = asyncHandler(async (req, res) => {
 
   const text = `Your OTP is: ${otp}`;
   const html = `<p>Your OTP is: <strong>${otp}</strong></p>`;
-  await sendEmail({ to: user.email, subject: 'Verify your email', text, html });
+  await sendEmail({ to: user.email, subject: "Verify your email", text, html });
 
   res.status(201).json({
-    message: 'Registration successful. Please check your email for the OTP to verify your account.',
+    message:
+      "Registration successful. Please check your email for the OTP to verify your account.",
   });
 });
 
@@ -56,7 +73,7 @@ const verifyOTP = asyncHandler(async (req, res) => {
 
   if (!user || user.otp !== otp || user.otpExpires < Date.now()) {
     res.status(400);
-    throw new Error('Invalid or expired OTP');
+    throw new Error("Invalid or expired OTP");
   }
 
   user.otp = undefined;
@@ -64,7 +81,7 @@ const verifyOTP = asyncHandler(async (req, res) => {
   await user.save();
 
   res.status(200).json({
-    message: 'OTP verified successfully',
+    message: "OTP verified successfully",
     token: generateToken(user._id),
   });
 });
@@ -79,7 +96,7 @@ const resendOTP = asyncHandler(async (req, res) => {
 
   if (!user) {
     res.status(400);
-    throw new Error('User not found');
+    throw new Error("User not found");
   }
 
   const otp = user.generateOTP();
@@ -87,10 +104,11 @@ const resendOTP = asyncHandler(async (req, res) => {
 
   const text = `Your new OTP is: ${otp}`;
   const html = `<p>Your new OTP is: <strong>${otp}</strong></p>`;
-  await sendEmail({ to: user.email, subject: 'Resend OTP', text, html });
+  await sendEmail({ to: user.email, subject: "Resend OTP", text, html });
 
   res.status(200).json({
-    message: 'OTP resent successfully. Please check your email for the new OTP.',
+    message:
+      "OTP resent successfully. Please check your email for the new OTP.",
   });
 });
 
@@ -113,7 +131,7 @@ const authUser = asyncHandler(async (req, res) => {
     });
   } else {
     res.status(401);
-    throw new Error('Invalid email or password');
+    throw new Error("Invalid email or password");
   }
 });
 
@@ -127,20 +145,27 @@ const forgotPassword = asyncHandler(async (req, res) => {
 
   if (!user) {
     res.status(400);
-    throw new Error('User not found');
+    throw new Error("User not found");
   }
 
   const resetToken = user.generatePasswordResetToken();
   await user.save();
 
-  const resetUrl = `${req.protocol}://${req.get('host')}/reset-password/${resetToken}`;
+  const resetUrl = `${req.protocol}://${req.get(
+    "host"
+  )}/reset-password/${resetToken}`;
 
   const text = `Click this link to reset your password: ${resetUrl}`;
   const html = `<p>Click this link to reset your password: <a href="${resetUrl}">${resetUrl}</a></p>`;
-  await sendEmail({ to: user.email, subject: 'Password Reset Request', text, html });
+  await sendEmail({
+    to: user.email,
+    subject: "Password Reset Request",
+    text,
+    html,
+  });
 
   res.status(200).json({
-    message: 'Password reset email sent',
+    message: "Password reset email sent",
   });
 });
 
@@ -151,7 +176,10 @@ const resetPassword = asyncHandler(async (req, res) => {
   const { token } = req.params;
   const { password } = req.body;
 
-  const resetPasswordToken = crypto.createHash('sha256').update(token).digest('hex');
+  const resetPasswordToken = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
 
   const user = await User.findOne({
     resetPasswordToken,
@@ -160,7 +188,7 @@ const resetPassword = asyncHandler(async (req, res) => {
 
   if (!user) {
     res.status(400);
-    throw new Error('Invalid or expired password reset token');
+    throw new Error("Invalid or expired password reset token");
   }
 
   user.password = password;
@@ -169,7 +197,7 @@ const resetPassword = asyncHandler(async (req, res) => {
   await user.save();
 
   res.status(200).json({
-    message: 'Password reset successful',
+    message: "Password reset successful",
   });
 });
 
@@ -184,12 +212,16 @@ const getUserProfile = asyncHandler(async (req, res) => {
       _id: user._id,
       firstName: user.firstName,
       lastName: user.lastName,
+      dateOfBirth: user.dateOfBirth,
+      gender: user.gender,
+      address: user.address,
+      country: user.country,
       email: user.email,
       phone: user.phone,
     });
   } else {
     res.status(404);
-    throw new Error('User not found');
+    throw new Error("User not found");
   }
 });
 
@@ -202,6 +234,10 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   if (user) {
     user.firstName = req.body.firstName || user.firstName;
     user.lastName = req.body.lastName || user.lastName;
+    user.dateOfBirth = req.body.dateOfBirth || user.dateOfBirth;
+    user.gender = req.body.gender || user.gender;
+    user.address = req.body.address || user.address;
+    user.country = req.body.country || user.country;
     user.email = req.body.email || user.email;
     user.phone = req.body.phone || user.phone;
 
@@ -215,13 +251,17 @@ const updateUserProfile = asyncHandler(async (req, res) => {
       _id: updatedUser._id,
       firstName: updatedUser.firstName,
       lastName: updatedUser.lastName,
+      dateOfBirth: updatedUser.dateOfBirth,
+      gender: updatedUser.gender,
+      address: updatedUser.address,
+      country: updatedUser.country,
       email: updatedUser.email,
       phone: updatedUser.phone,
       token: generateToken(updatedUser._id),
     });
   } else {
     res.status(404);
-    throw new Error('User not found');
+    throw new Error("User not found");
   }
 });
 
