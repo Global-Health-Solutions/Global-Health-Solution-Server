@@ -1,8 +1,9 @@
 // utils/sendEmail.js
 
 const nodemailer = require('nodemailer');
+const { generateOTPEmailHTML } = require('./emailTemplates');
 
-const sendEmail = async ({ to, subject, text, html }) => {
+const sendEmail = async ({ to, subject, text, html, otpCode }) => {
   const transporter = nodemailer.createTransport({
     service: 'gmail',
     auth: {
@@ -12,11 +13,11 @@ const sendEmail = async ({ to, subject, text, html }) => {
   });
 
   const mailOptions = {
-    from: `Your Name <${process.env.EMAIL_USER}>`,
+    from: `Global Health Solutions <${process.env.EMAIL_USER}>`,
     to,
     subject,
     text,
-    html,
+    html: html || (otpCode ? generateOTPEmailHTML(otpCode) : null),
   };
 
   try {
@@ -28,36 +29,3 @@ const sendEmail = async ({ to, subject, text, html }) => {
 };
 
 module.exports = sendEmail;
-
-
-
-// const nodemailer = require('nodemailer');
-
-// const sendEmail = async ({ to, subject, text, html }) => {
-//   const transporter = nodemailer.createTransport({
-//     host: 'mail.smtp2go.com',
-//     port: 587,
-//     auth: {
-//       user: process.env.SMTP2GO_USER,
-//       pass: process.env.SMTP2GO_PASS,
-//     },
-//   });
-
-//   const mailOptions = {
-//     from: `Your Name <${process.env.SMTP2GO_USER}>`,
-//     to,
-//     subject,
-//     text,
-//     html,
-//   };
-
-//   try {
-//     await transporter.sendMail(mailOptions);
-//     console.log('Email sent successfully');
-//   } catch (error) {
-//     console.error('Error sending email:', error);
-//     throw new Error('Email sending failed');
-//   }
-// };
-
-// module.exports = sendEmail;

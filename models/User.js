@@ -1,27 +1,33 @@
-const mongoose = require("mongoose");
-const bcrypt = require("bcryptjs");
-const crypto = require("crypto");
+const mongoose = require('mongoose');
+const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 
 const userSchema = new mongoose.Schema({
+  role: { type: String, enum: ['user', 'specialist'], required: true },
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
-  dateOfBirth: { type: Date, required: true },
-  gender: { type: String, required: true },
-  address: { type: String, required: true },
-  country: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  phone: { type: String, required: true },
   password: { type: String, required: true },
-  agreeTerms: { type: Boolean, required: true },
-  otp: String,
-  otpExpires: Date,
-  resetPasswordToken: String,
-  resetPasswordExpires: Date,
-});
+  dateOfBirth: { type: Date },
+  gender: { type: String },
+  address: { type: String },
+  country: { type: String },
+  phone: { type: String },
+  agreeTerms: { type: Boolean, default: false },
+  certifications: { type: String },
+  isApproved: { type: Boolean, default: false },
+  loginTime: { type: Date, default: Date.now },
+  otp: { type: String },
+  otpExpires: { type: Date },
+  resetPasswordToken: { type: String },
+  resetPasswordExpires: { type: Date },
+  isOnline: { type: Boolean, default: false },
+  specialistCategory: { type: String },
+}, { timestamps: true });
 
-// Pre-save hook to hash password
-userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) {
+// Hash password before saving
+userSchema.pre('save', async function (next) {
+  if (!this.isModified('password')) {
     return next();
   }
   const salt = await bcrypt.genSalt(10);
@@ -29,29 +35,27 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
-// Match user entered password with hashed password in the database
+// Compare password
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
 // Generate OTP
 userSchema.methods.generateOTP = function () {
-  const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6 digit OTP
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
   this.otp = otp;
-  this.otpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes from now
+  this.otpExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
   return otp;
 };
 
-// Generate and hash password reset token
+// Generate password reset token
 userSchema.methods.generatePasswordResetToken = function () {
-  const resetToken = crypto.randomBytes(20).toString("hex");
-  this.resetPasswordToken = crypto
-    .createHash("sha256")
-    .update(resetToken)
-    .digest("hex");
-  this.resetPasswordExpires = Date.now() + 10 * 60 * 1000; // 10 minutes from now
+  const resetToken = crypto.randomBytes(20).toString('hex');
+  this.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+  this.resetPasswordExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
   return resetToken;
 };
 
-const User = mongoose.model("User", userSchema);
+const User = mongoose.model('User', userSchema);
+
 module.exports = User;

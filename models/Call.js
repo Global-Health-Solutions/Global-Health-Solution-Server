@@ -1,11 +1,14 @@
+// models/Call.js
 const mongoose = require('mongoose');
 
 const callSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  specialist: { type: mongoose.Schema.Types.ObjectId, ref: 'Specialist', required: true },
-  duration: { type: Number, required: true },
-  isSuccessful: { type: Boolean, default: false },
-  callData: { type: String }, // Store compressed call data
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  specialistId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  channelName: { type: String, required: true },
+  status: { type: String, enum: ['pending', 'ongoing', 'completed'], default: 'pending' },
+  startTime: { type: Date, default: Date.now },
+  endTime: { type: Date },
+  specialistCategory: { type: String, required: true },
 }, { timestamps: true });
 
 const Call = mongoose.model('Call', callSchema);

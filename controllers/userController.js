@@ -1,3 +1,5 @@
+// controllers/userControllers.js
+
 const asyncHandler = require("express-async-handler");
 const User = require("../models/User");
 const generateToken = require("../utils/generateToken");
@@ -5,11 +7,10 @@ const verifyRecaptcha = require("../utils/recaptcha");
 const sendEmail = require("../utils/sendEmail");
 const crypto = require("crypto");
 
-// @desc    Register a new user
-// @route   POST /api/users
-// @access  Public
+// Register User or Specialist
 const registerUser = asyncHandler(async (req, res) => {
   const {
+    role,
     firstName,
     lastName,
     dateOfBirth,
@@ -21,6 +22,8 @@ const registerUser = asyncHandler(async (req, res) => {
     password,
     agreeTerms,
     recaptcha,
+    certifications,
+    specialistCategory,
   } = req.body;
 
   // Validate reCAPTCHA
@@ -38,6 +41,7 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   const user = await User.create({
+    role,
     firstName,
     lastName,
     dateOfBirth,
@@ -48,14 +52,18 @@ const registerUser = asyncHandler(async (req, res) => {
     phone,
     password,
     agreeTerms,
+    certifications: role === "specialist" ? certifications : undefined,
+    specialistCategory: role === "specialist" ? specialistCategory : undefined,
   });
 
   const otp = user.generateOTP();
   await user.save();
 
-  const text = `Your OTP is: ${otp}`;
-  const html = `<p>Your OTP is: <strong>${otp}</strong></p>`;
-  await sendEmail({ to: user.email, subject: "Verify your email", text, html });
+  await sendEmail({
+    to: user.email,
+    subject: "Your One-Time Password for Global Health Solutions",
+    otpCode: otp,
+  });
 
   res.status(201).json({
     message:
@@ -63,9 +71,7 @@ const registerUser = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Verify OTP
-// @route   POST /api/users/verify-otp
-// @access  Public
+// Verify OTP
 const verifyOTP = asyncHandler(async (req, res) => {
   const { email, otp } = req.body;
 
@@ -86,9 +92,7 @@ const verifyOTP = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Resend OTP
-// @route   POST /api/users/resend-otp
-// @access  Public
+// Resend OTP
 const resendOTP = asyncHandler(async (req, res) => {
   const { email } = req.body;
 
@@ -102,9 +106,12 @@ const resendOTP = asyncHandler(async (req, res) => {
   const otp = user.generateOTP();
   await user.save();
 
-  const text = `Your new OTP is: ${otp}`;
-  const html = `<p>Your new OTP is: <strong>${otp}</strong></p>`;
-  await sendEmail({ to: user.email, subject: "Resend OTP", text, html });
+  await sendEmail({
+    to: user.email,
+    subject: "Your New One-Time Password for Global Health Solutions",
+    text,
+    otpCode: otp,
+  });
 
   res.status(200).json({
     message:
@@ -112,9 +119,7 @@ const resendOTP = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Authenticate user & get token
-// @route   POST /api/users/login
-// @access  Public
+// Authenticate user & get token
 const authUser = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
@@ -135,9 +140,7 @@ const authUser = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Request password reset
-// @route   POST /api/users/forgot-password
-// @access  Public
+// Request password reset
 const forgotPassword = asyncHandler(async (req, res) => {
   const { email } = req.body;
 
@@ -169,9 +172,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Reset password
-// @route   POST /api/users/reset-password/:token
-// @access  Public
+// Reset password
 const resetPassword = asyncHandler(async (req, res) => {
   const { token } = req.params;
   const { password } = req.body;
@@ -201,9 +202,7 @@ const resetPassword = asyncHandler(async (req, res) => {
   });
 });
 
-// @desc    Get user profile
-// @route   GET /api/users/profile
-// @access  Private
+// Get user profile
 const getUserProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
 
@@ -225,9 +224,7 @@ const getUserProfile = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Update user profile
-// @route   PUT /api/users/profile
-// @access  Private
+// Update user profile
 const updateUserProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
 
@@ -265,6 +262,28 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   }
 });
 
+// Update user availability
+const updateUserAvailability = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.user._id);
+
+  if (user && user.role === "specialist") {
+    user.isOnline = req.body.isOnline;
+    const updatedUser = await user.save();
+
+    res.json({
+      _id: updatedUser._id,
+      firstName: updatedUser.firstName,
+      lastName: updatedUser.lastName,
+      email: updatedUser.email,
+      role: updatedUser.role,
+      isOnline: updatedUser.isOnline,
+    });
+  } else {
+    res.status(404);
+    throw new Error("User not found or not a specialist");
+  }
+});
+
 module.exports = {
   registerUser,
   verifyOTP,
@@ -274,4 +293,5 @@ module.exports = {
   resetPassword,
   getUserProfile,
   updateUserProfile,
+  updateUserAvailability,
 };

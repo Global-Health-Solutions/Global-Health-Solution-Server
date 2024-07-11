@@ -9,6 +9,7 @@ const bodyParser = require("body-parser");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const session = require("cookie-session");
+const socket = require("./utils/socket");
 
 const app = express();
 
@@ -60,6 +61,12 @@ app.use("/tawk", limiter);
 // Input sanitization
 app.use(mongosanitize());
 app.use(xss());
+
+// Make io available to our router
+app.use((req, res, next) => {
+  req.io = socket.getIO();
+  next();
+});
 
 // Routes
 app.use(routes);
