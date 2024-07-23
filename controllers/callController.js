@@ -1,8 +1,8 @@
 // controllers/callController.js
-
 const { RtcTokenBuilder, RtcRole } = require("agora-access-token");
 const Call = require("../models/Call");
-const User = require("../models/User"); // Make sure to import the User model
+const User = require("../models/User");
+const { default: mongoose } = require("mongoose");
 
 // Generate Agora token
 exports.generateToken = (req, res) => {
@@ -53,19 +53,31 @@ exports.initiateCall = async (req, res) => {
       status: 'pending'
     });
     await call.save();
-    
-    // Emit socket event to notify specialist
-    req.app.get('io').to(specialist._id.toString()).emit('incomingCall', {
-      callId: call._id,
+
+    // Generate Agora token
+    const token = RtcTokenBuilder.buildTokenWithUid(
+      process.env.AGORA_APP_ID,
+      process.env.AGORA_APP_CERTIFICATE,
       channelName,
-      userId
-    });
+      0,
+      RtcRole.PUBLISHER,
+      Math.floor(Date.now() / 1000) + 3600
+    );
     
     res.json({ 
       callId: call._id,
       channelName,
-      specialistId: specialist._id
+      specialistId: specialist._id,
+      token
     });
+
+    req.io.to(specialist._id.toString()).emit('incomingCall', {
+      callId: call._id,
+      channelName,
+      callerId: userId,
+      token
+    });
+
   } catch (error) {
     console.error('Error initiating call:', error);
     res.status(500).json({ message: 'Failed to initiate call' });
@@ -75,20 +87,27 @@ exports.initiateCall = async (req, res) => {
 // Accept call
 exports.acceptCall = async (req, res) => {
   const { callId } = req.body;
-  
+
   try {
     const call = await Call.findByIdAndUpdate(callId, { status: 'ongoing' }, { new: true });
-    
+
     if (!call) {
       return res.status(404).json({ message: 'Call not found' });
     }
-    
+
     // Notify the user that the call was accepted
-    req.app.get('io').to(call.userId.toString()).emit('callAccepted', {
+    req.io.to(call.userId.toString()).emit('callAccepted', {
       callId: call._id,
-      channelName: call.channelName
+      channelName: call.channelName,
+      token,
     });
-    
+
+    req.io.to(call.specialistId.toString()).emit('callAccepted', {
+      callId: call._id,
+      channelName: call.channelName,
+      token,
+    });
+
     res.json({ message: 'Call accepted', call });
   } catch (error) {
     console.error('Error accepting call:', error);
@@ -96,20 +115,21 @@ exports.acceptCall = async (req, res) => {
   }
 };
 
+
 // Reject call
+// Server-side (controllers/callController.js)
 exports.rejectCall = async (req, res) => {
   const { callId } = req.body;
-  
+
   try {
     const call = await Call.findByIdAndUpdate(callId, { status: 'rejected' }, { new: true });
-    
+
     if (!call) {
       return res.status(404).json({ message: 'Call not found' });
     }
-    
-    // Notify the user that the call was rejected
-    io.to(call.userId.toString()).emit('callRejected', { callId: call._id });
-    
+
+    req.io.to(call.userId.toString()).emit('callRejected', { callId: call._id });
+
     res.json({ message: 'Call rejected', call });
   } catch (error) {
     console.error('Error rejecting call:', error);
@@ -122,53 +142,52 @@ exports.updateCallStatus = async (req, res) => {
   const { callId } = req.params;
   const { status } = req.body;
 
+  if (!callId || !mongoose.Types.ObjectId.isValid(callId)) {
+    return res.status(400).json({ error: 'Invalid call ID' });
+  }
+
   try {
-    const call = await Call.findByIdAndUpdate(
-      callId,
-      { status, ...(status === 'completed' ? { endTime: Date.now() } : {}) },
-      { new: true }
-    );
-
+    const call = await Call.findByIdAndUpdate(callId, { status }, { new: true });
     if (!call) {
-      return res.status(404).json({ message: 'Call not found' });
+      return res.status(404).json({ error: 'Call not found' });
     }
-
     res.json(call);
+
   } catch (error) {
     console.error('Error updating call status:', error);
-    res.status(500).json({ message: 'Failed to update call status' });
+    res.status(500).json({ error: 'Server error' });
   }
 };
 
 // Helper functions
-async function findAvailableSpecialist(category) {
-  return await User.findOne({
-    role: "specialist",
-    specialistCategory: category,
-    isOnline: true,
-    isApproved: true,
-  }).sort({ loginTime: 1 });
-}
+// async function findAvailableSpecialist(category) {
+//   return await User.findOne({
+//     role: "specialist",
+//     specialistCategory: category,
+//     isOnline: true,
+//     isApproved: true,
+//   }).sort({ loginTime: 1 });
+// }
 
-async function saveCallDetails(
-  userId,
-  specialistId,
-  channelName,
-  specialistCategory
-) {
-  try {
-    const call = new Call({
-      userId,
-      specialistId,
-      channelName,
-      specialistCategory,
-      status: "pending",
-    });
+// async function saveCallDetails(
+//   userId,
+//   specialistId,
+//   channelName,
+//   specialistCategory
+// ) {
+//   try {
+//     const call = new Call({
+//       userId,
+//       specialistId,
+//       channelName,
+//       specialistCategory,
+//       status: "pending",
+//     });
 
-    const savedCall = await call.save();
-    return savedCall;
-  } catch (error) {
-    console.error("Error saving call details:", error);
-    throw new Error("Failed to save call details");
-  }
-}
+//     const savedCall = await call.save();
+//     return savedCall;
+//   } catch (error) {
+//     console.error("Error saving call details:", error);
+//     throw new Error("Failed to save call details");
+//   }
+// }

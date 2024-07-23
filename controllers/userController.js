@@ -1,5 +1,3 @@
-// controllers/userControllers.js
-
 const asyncHandler = require("express-async-handler");
 const User = require("../models/User");
 const generateToken = require("../utils/generateToken");
@@ -22,8 +20,9 @@ const registerUser = asyncHandler(async (req, res) => {
     password,
     agreeTerms,
     recaptcha,
-    certifications,
     specialistCategory,
+    isOnline,
+    profileImage,
   } = req.body;
 
   // Validate reCAPTCHA
@@ -52,8 +51,9 @@ const registerUser = asyncHandler(async (req, res) => {
     phone,
     password,
     agreeTerms,
-    certifications: role === "specialist" ? certifications : undefined,
     specialistCategory: role === "specialist" ? specialistCategory : undefined,
+    isOnline: role === "specialist" ? isOnline : undefined,
+    profileImage,
   });
 
   const otp = user.generateOTP();
@@ -66,8 +66,7 @@ const registerUser = asyncHandler(async (req, res) => {
   });
 
   res.status(201).json({
-    message:
-      "Registration successful. Please check your email for the OTP to verify your account.",
+    message: "Registration successful. Please check your email for the OTP to verify your account.",
   });
 });
 
@@ -109,13 +108,11 @@ const resendOTP = asyncHandler(async (req, res) => {
   await sendEmail({
     to: user.email,
     subject: "Your New One-Time Password for Global Health Solutions",
-    text,
     otpCode: otp,
   });
 
   res.status(200).json({
-    message:
-      "OTP resent successfully. Please check your email for the new OTP.",
+    message: "OTP resent successfully. Please check your email for the new OTP.",
   });
 });
 
@@ -128,10 +125,26 @@ const authUser = asyncHandler(async (req, res) => {
   if (user && (await user.matchPassword(password))) {
     res.json({
       _id: user._id,
+      role: user.role,
       firstName: user.firstName,
       lastName: user.lastName,
+      dateOfBirth: user.dateOfBirth,
+      gender: user.gender,
+      address: user.address,
+      country: user.country,
       email: user.email,
       phone: user.phone,
+      agreeTerms: user.agreeTerms,
+      certifications: user.certifications,
+      isApproved: user.isApproved,
+      loginTime: user.loginTime,
+      otp: user.otp,
+      otpExpires: user.otpExpires,
+      resetPasswordToken: user.resetPasswordToken,
+      resetPasswordExpires: user.resetPasswordExpires,
+      isOnline: user.isOnline,
+      specialistCategory: user.specialistCategory,
+      profileImage: user.profileImage,
       token: generateToken(user._id),
     });
   } else {
@@ -154,9 +167,7 @@ const forgotPassword = asyncHandler(async (req, res) => {
   const resetToken = user.generatePasswordResetToken();
   await user.save();
 
-  const resetUrl = `${req.protocol}://${req.get(
-    "host"
-  )}/reset-password/${resetToken}`;
+  const resetUrl = `${req.protocol}://${req.get("host")}/reset-password/${resetToken}`;
 
   const text = `Click this link to reset your password: ${resetUrl}`;
   const html = `<p>Click this link to reset your password: <a href="${resetUrl}">${resetUrl}</a></p>`;
@@ -177,10 +188,7 @@ const resetPassword = asyncHandler(async (req, res) => {
   const { token } = req.params;
   const { password } = req.body;
 
-  const resetPasswordToken = crypto
-    .createHash("sha256")
-    .update(token)
-    .digest("hex");
+  const resetPasswordToken = crypto.createHash("sha256").update(token).digest("hex");
 
   const user = await User.findOne({
     resetPasswordToken,
@@ -209,6 +217,7 @@ const getUserProfile = asyncHandler(async (req, res) => {
   if (user) {
     res.json({
       _id: user._id,
+      role: user.role,
       firstName: user.firstName,
       lastName: user.lastName,
       dateOfBirth: user.dateOfBirth,
@@ -217,6 +226,17 @@ const getUserProfile = asyncHandler(async (req, res) => {
       country: user.country,
       email: user.email,
       phone: user.phone,
+      agreeTerms: user.agreeTerms,
+      certifications: user.certifications,
+      isApproved: user.isApproved,
+      loginTime: user.loginTime,
+      otp: user.otp,
+      otpExpires: user.otpExpires,
+      resetPasswordToken: user.resetPasswordToken,
+      resetPasswordExpires: user.resetPasswordExpires,
+      isOnline: user.isOnline,
+      specialistCategory: user.specialistCategory,
+      profileImage: user.profileImage,
     });
   } else {
     res.status(404);
@@ -229,6 +249,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
 
   if (user) {
+    user.role = req.body.role || user.role;
     user.firstName = req.body.firstName || user.firstName;
     user.lastName = req.body.lastName || user.lastName;
     user.dateOfBirth = req.body.dateOfBirth || user.dateOfBirth;
@@ -237,6 +258,12 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     user.country = req.body.country || user.country;
     user.email = req.body.email || user.email;
     user.phone = req.body.phone || user.phone;
+    user.agreeTerms = req.body.agreeTerms !== undefined ? req.body.agreeTerms : user.agreeTerms;
+    user.certifications = req.body.certifications || user.certifications;
+    user.isApproved = req.body.isApproved !== undefined ? req.body.isApproved : user.isApproved;
+    user.isOnline = req.body.isOnline !== undefined ? req.body.isOnline : user.isOnline;
+    user.specialistCategory = req.body.specialistCategory || user.specialistCategory;
+    user.profileImage = req.body.profileImage || user.profileImage;
 
     if (req.body.password) {
       user.password = req.body.password;
@@ -246,6 +273,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
 
     res.json({
       _id: updatedUser._id,
+      role: updatedUser.role,
       firstName: updatedUser.firstName,
       lastName: updatedUser.lastName,
       dateOfBirth: updatedUser.dateOfBirth,
@@ -254,6 +282,17 @@ const updateUserProfile = asyncHandler(async (req, res) => {
       country: updatedUser.country,
       email: updatedUser.email,
       phone: updatedUser.phone,
+      agreeTerms: updatedUser.agreeTerms,
+      certifications: updatedUser.certifications,
+      isApproved: updatedUser.isApproved,
+      loginTime: updatedUser.loginTime,
+      otp: updatedUser.otp,
+      otpExpires: updatedUser.otpExpires,
+      resetPasswordToken: updatedUser.resetPasswordToken,
+      resetPasswordExpires: updatedUser.resetPasswordExpires,
+      isOnline: updatedUser.isOnline,
+      specialistCategory: updatedUser.specialistCategory,
+      profileImage: updatedUser.profileImage,
       token: generateToken(updatedUser._id),
     });
   } else {
@@ -267,16 +306,31 @@ const updateUserAvailability = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
 
   if (user && user.role === "specialist") {
-    user.isOnline = req.body.isOnline;
+    user.isOnline = !user.isOnline;
     const updatedUser = await user.save();
 
     res.json({
       _id: updatedUser._id,
+      role: updatedUser.role,
       firstName: updatedUser.firstName,
       lastName: updatedUser.lastName,
+      dateOfBirth: updatedUser.dateOfBirth,
+      gender: updatedUser.gender,
+      address: updatedUser.address,
+      country: updatedUser.country,
       email: updatedUser.email,
-      role: updatedUser.role,
+      phone: updatedUser.phone,
+      agreeTerms: updatedUser.agreeTerms,
+      certifications: updatedUser.certifications,
+      isApproved: updatedUser.isApproved,
+      loginTime: updatedUser.loginTime,
+      otp: updatedUser.otp,
+      otpExpires: updatedUser.otpExpires,
+      resetPasswordToken: updatedUser.resetPasswordToken,
+      resetPasswordExpires: updatedUser.resetPasswordExpires,
       isOnline: updatedUser.isOnline,
+      specialistCategory: updatedUser.specialistCategory,
+      profileImage: updatedUser.profileImage,
     });
   } else {
     res.status(404);

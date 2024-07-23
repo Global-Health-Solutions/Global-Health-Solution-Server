@@ -4,19 +4,19 @@ const {
   generateToken,
   initiateCall,
   updateCallStatus,
-  acceptCall
+  acceptCall,
 } = require("../controllers/callController");
 
 // Generate Agora token
 router.post("/token", generateToken);
 
 // Initiate a call
-router.post('/initiate', initiateCall);
+router.post("/initiate", initiateCall);
 
 // Accept call
-router.post('/accept', acceptCall)
+router.post("/accept", acceptCall);
 
 // Update call status
-router.patch('/status/:callId', updateCallStatus);
+router.patch("/status/:callId", updateCallStatus);
 
 module.exports = router;
