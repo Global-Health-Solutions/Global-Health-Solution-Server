@@ -16,12 +16,14 @@ const userSchema = new mongoose.Schema({
   agreeTerms: { type: Boolean, default: false },
   certifications: { type: String },
   isApproved: { type: Boolean, default: false },
+  isEmailVerified: { type: Boolean, default: false },
   loginTime: { type: Date, default: Date.now },
   otp: { type: String },
   otpExpires: { type: Date },
   resetPasswordToken: { type: String },
   resetPasswordExpires: { type: Date },
   isOnline: { type: Boolean, default: false },
+  profileImage: { type: String }, 
   specialistCategory: { type: String },
 }, { timestamps: true });
 

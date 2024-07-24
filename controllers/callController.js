@@ -1,5 +1,5 @@
 // controllers/callController.js
-const { RtcTokenBuilder, RtcRole } = require("agora-access-token");
+const { RtcTokenBuilder, RtcRole } = require("agora-token");
 const Call = require("../models/Call");
 const User = require("../models/User");
 const { default: mongoose } = require("mongoose");

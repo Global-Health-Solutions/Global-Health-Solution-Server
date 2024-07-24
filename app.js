@@ -4,14 +4,20 @@ const routes = require("./routes/index");
 const rateLimit = require("express-rate-limit");
 const helmet = require("helmet");
 const mongosanitize = require("express-mongo-sanitize");
-const xss = require("xss-clean");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const session = require("cookie-session");
 const socket = require("./utils/socket");
+const fs = require("fs");
+const path = require("path");
 
 const app = express();
+
+const uploadDir = path.join(__dirname, "uploads", "profile-images");
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 // Enable CORS
 app.use(
@@ -22,7 +28,7 @@ app.use(
   })
 );
 
-app.use(cookieParser());
+// app.use(cookieParser());
 
 // Body parser configurations
 app.use(express.json({ limit: "10kb" }));
@@ -60,7 +66,6 @@ app.use("/tawk", limiter);
 
 // Input sanitization
 app.use(mongosanitize());
-app.use(xss());
 
 // Make io available to our router
 app.use((req, res, next) => {
@@ -69,6 +74,14 @@ app.use((req, res, next) => {
 });
 
 // Routes
-app.use(routes);
+const baseRoute = process.env.NODE_ENV === "production" ? '' : '/api';
+app.use(`${baseRoute}`, routes);
+
+app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+
+app.get('/test', (req, res) => {
+  console.log('is working')
+  res.send('Server is working');
+});
 
 module.exports = app;

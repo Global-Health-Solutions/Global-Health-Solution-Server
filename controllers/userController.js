@@ -4,6 +4,7 @@ const generateToken = require("../utils/generateToken");
 const verifyRecaptcha = require("../utils/recaptcha");
 const sendEmail = require("../utils/sendEmail");
 const crypto = require("crypto");
+const path = require("path");
 
 // Register User or Specialist
 const registerUser = asyncHandler(async (req, res) => {
@@ -83,6 +84,7 @@ const verifyOTP = asyncHandler(async (req, res) => {
 
   user.otp = undefined;
   user.otpExpires = undefined;
+  user.isEmailVerified = true;
   await user.save();
 
   res.status(200).json({
@@ -214,6 +216,8 @@ const resetPassword = asyncHandler(async (req, res) => {
 const getUserProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
 
+  console.log('olay')
+
   if (user) {
     res.json({
       _id: user._id,
@@ -244,6 +248,7 @@ const getUserProfile = asyncHandler(async (req, res) => {
   }
 });
 
+
 // Update user profile
 const updateUserProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
@@ -263,7 +268,15 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     user.isApproved = req.body.isApproved !== undefined ? req.body.isApproved : user.isApproved;
     user.isOnline = req.body.isOnline !== undefined ? req.body.isOnline : user.isOnline;
     user.specialistCategory = req.body.specialistCategory || user.specialistCategory;
-    user.profileImage = req.body.profileImage || user.profileImage;
+    user.profileImage = req.file ? req.file.path : user.profileImage;
+
+    if (req.file) {
+      user.profileImage = '/uploads/profile-images/' + path.basename(req.file.path);
+    }
+
+    if (req.body.password) {
+      user.password = req.body.password;
+    }
 
     if (req.body.password) {
       user.password = req.body.password;
@@ -300,6 +313,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     throw new Error("User not found");
   }
 });
+
 
 // Update user availability
 const updateUserAvailability = asyncHandler(async (req, res) => {

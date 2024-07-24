@@ -14,6 +14,15 @@ const { protect } = require('../middlewares/authMiddleware');
 const multer = require('multer');
 const path = require('path');
 const router = express.Router();
+const fs = require('fs');
+
+const projectRoot = path.resolve(__dirname, '..');
+const uploadDir = path.join(projectRoot, 'uploads', 'profile-images');
+
+// Create the directory if it doesn't exist
+if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 // Set up multer for file uploads
 const storage = multer.diskStorage({
@@ -25,6 +34,34 @@ const storage = multer.diskStorage({
       null,
       `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`
     );
+  },
+});
+
+const profileImageStorage = multer.diskStorage({
+  destination(req, file, cb) {
+    cb(null, uploadDir);
+  },
+  filename(req, file, cb) {
+    cb(null, `user-${req.user._id}-${Date.now()}${path.extname(file.originalname)}`);
+  },
+});
+
+function checkProfileImageType(file, cb) {
+  const filetypes = /jpeg|jpg|png/;
+  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
+  const mimetype = filetypes.test(file.mimetype);
+
+  if (extname && mimetype) {
+    return cb(null, true);
+  } else {
+    cb('Profile image must be in JPEG, JPG, or PNG format');
+  }
+}
+
+const uploadProfileImage = multer({
+  storage: profileImageStorage,
+  fileFilter: function (req, file, cb) {
+    checkProfileImageType(file, cb);
   },
 });
 
@@ -62,7 +99,11 @@ router.post('/resend-otp', resendOTP);
 router.post('/login', authUser);
 router.post('/forgot-password', forgotPassword);
 router.post('/reset-password/:token', resetPassword);
-router.route('/profile').get(protect, getUserProfile).put(protect, updateUserProfile);
+router.route('/profile')
+  .get(protect, getUserProfile)
+  .put(protect, uploadProfileImage.single('profileImage'), updateUserProfile);
 router.put('/availability', protect, updateUserAvailability);
 
 module.exports = router;
+
+
