@@ -81,7 +81,7 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
 //just to test
 
-app.get('test', (req, res) => {
+app.get('/test', (req, res) => {
   console.log('it is working ')
   res.json({ message: 'This is the get-calls route' });
 });
