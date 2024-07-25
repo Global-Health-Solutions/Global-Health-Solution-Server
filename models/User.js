@@ -14,7 +14,8 @@ const userSchema = new mongoose.Schema({
   country: { type: String },
   phone: { type: String },
   agreeTerms: { type: Boolean, default: false },
-  certifications: { type: String },
+  practicingLicense: { type: String }, // File path for practicing license
+  doctorRegistrationNumber: { type: String },
   isApproved: { type: Boolean, default: false },
   isEmailVerified: { type: Boolean, default: false },
   loginTime: { type: Date, default: Date.now },

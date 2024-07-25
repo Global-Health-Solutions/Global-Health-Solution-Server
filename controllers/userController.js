@@ -24,6 +24,7 @@ const registerUser = asyncHandler(async (req, res) => {
     specialistCategory,
     isOnline,
     profileImage,
+    doctorRegistrationNumber,
   } = req.body;
 
   // Validate reCAPTCHA
@@ -40,6 +41,8 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new Error("User already exists");
   }
 
+  const practicingLicense = req.file ? req.file.path : undefined;
+
   const user = await User.create({
     role,
     firstName,
@@ -55,6 +58,8 @@ const registerUser = asyncHandler(async (req, res) => {
     specialistCategory: role === "specialist" ? specialistCategory : undefined,
     isOnline: role === "specialist" ? isOnline : undefined,
     profileImage,
+    doctorRegistrationNumber: role === "specialist" ? doctorRegistrationNumber : undefined,
+    practicingLicense: role === "specialist" ? practicingLicense : undefined,
   });
 
   const otp = user.generateOTP();
@@ -70,6 +75,7 @@ const registerUser = asyncHandler(async (req, res) => {
     message: "Registration successful. Please check your email for the OTP to verify your account.",
   });
 });
+
 
 // Verify OTP
 const verifyOTP = asyncHandler(async (req, res) => {
@@ -140,6 +146,7 @@ const authUser = asyncHandler(async (req, res) => {
       certifications: user.certifications,
       isApproved: user.isApproved,
       loginTime: user.loginTime,
+      isEmailVerified: user.isEmailVerified,
       otp: user.otp,
       otpExpires: user.otpExpires,
       resetPasswordToken: user.resetPasswordToken,
@@ -216,7 +223,6 @@ const resetPassword = asyncHandler(async (req, res) => {
 const getUserProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
 
-  console.log('olay')
 
   if (user) {
     res.json({
@@ -231,9 +237,11 @@ const getUserProfile = asyncHandler(async (req, res) => {
       email: user.email,
       phone: user.phone,
       agreeTerms: user.agreeTerms,
-      certifications: user.certifications,
+      practicingLicense: user.practicingLicense,
+      doctorRegistrationNumber: user.doctorRegistrationNumber,
       isApproved: user.isApproved,
       loginTime: user.loginTime,
+      isEmailVerified: user.isEmailVerified,
       otp: user.otp,
       otpExpires: user.otpExpires,
       resetPasswordToken: user.resetPasswordToken,
@@ -241,6 +249,7 @@ const getUserProfile = asyncHandler(async (req, res) => {
       isOnline: user.isOnline,
       specialistCategory: user.specialistCategory,
       profileImage: user.profileImage,
+      token: generateToken(user._id),
     });
   } else {
     res.status(404);
@@ -264,7 +273,9 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     user.email = req.body.email || user.email;
     user.phone = req.body.phone || user.phone;
     user.agreeTerms = req.body.agreeTerms !== undefined ? req.body.agreeTerms : user.agreeTerms;
-    user.certifications = req.body.certifications || user.certifications;
+    user.practicingLicense = req.file ? req.file.path : user.practicingLicense;
+    user.doctorRegistrationNumber = req.body.doctorRegistrationNumber || user.doctorRegistrationNumber;
+    user.isEmailVerified = req.body.isEmailVerified !== undefined ? req.body.isEmailVerified : user.isEmailVerified;
     user.isApproved = req.body.isApproved !== undefined ? req.body.isApproved : user.isApproved;
     user.isOnline = req.body.isOnline !== undefined ? req.body.isOnline : user.isOnline;
     user.specialistCategory = req.body.specialistCategory || user.specialistCategory;
@@ -272,10 +283,6 @@ const updateUserProfile = asyncHandler(async (req, res) => {
 
     if (req.file) {
       user.profileImage = '/uploads/profile-images/' + path.basename(req.file.path);
-    }
-
-    if (req.body.password) {
-      user.password = req.body.password;
     }
 
     if (req.body.password) {
@@ -296,9 +303,11 @@ const updateUserProfile = asyncHandler(async (req, res) => {
       email: updatedUser.email,
       phone: updatedUser.phone,
       agreeTerms: updatedUser.agreeTerms,
-      certifications: updatedUser.certifications,
+      practicingLicense: updatedUser.practicingLicense,
+      doctorRegistrationNumber: updatedUser.doctorRegistrationNumber,
       isApproved: updatedUser.isApproved,
       loginTime: updatedUser.loginTime,
+      isEmailVerified: updatedUser.isEmailVerified,
       otp: updatedUser.otp,
       otpExpires: updatedUser.otpExpires,
       resetPasswordToken: updatedUser.resetPasswordToken,
@@ -313,7 +322,6 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     throw new Error("User not found");
   }
 });
-
 
 // Update user availability
 const updateUserAvailability = asyncHandler(async (req, res) => {
@@ -335,9 +343,11 @@ const updateUserAvailability = asyncHandler(async (req, res) => {
       email: updatedUser.email,
       phone: updatedUser.phone,
       agreeTerms: updatedUser.agreeTerms,
-      certifications: updatedUser.certifications,
+      practicingLicense: updatedUser.practicingLicense,
+      doctorRegistrationNumber: updatedUser.doctorRegistrationNumber,
       isApproved: updatedUser.isApproved,
       loginTime: updatedUser.loginTime,
+      isEmailVerified: updatedUser.isEmailVerified,
       otp: updatedUser.otp,
       otpExpires: updatedUser.otpExpires,
       resetPasswordToken: updatedUser.resetPasswordToken,
@@ -345,6 +355,7 @@ const updateUserAvailability = asyncHandler(async (req, res) => {
       isOnline: updatedUser.isOnline,
       specialistCategory: updatedUser.specialistCategory,
       profileImage: updatedUser.profileImage,
+      token: generateToken(updatedUser._id),
     });
   } else {
     res.status(404);

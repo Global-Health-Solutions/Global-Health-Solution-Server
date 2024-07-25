@@ -5,6 +5,8 @@ const {
   initiateCall,
   updateCallStatus,
   acceptCall,
+  getCall,
+  getCalls,
 } = require("../controllers/callController");
 
 // Generate Agora token
@@ -18,5 +20,9 @@ router.post("/accept", acceptCall);
 
 // Update call status
 router.patch("/status/:callId", updateCallStatus);
+
+router.get("/get-call/:callId", getCall)
+
+router.get("/get-calls", getCalls)
 
 module.exports = router;
