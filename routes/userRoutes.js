@@ -17,80 +17,61 @@ const router = express.Router();
 const fs = require('fs');
 
 const projectRoot = path.resolve(__dirname, '..');
-const uploadDir = path.join(projectRoot, 'uploads', 'profile-images');
+const uploadProfileDir = path.join(projectRoot, 'uploads', 'profile-images');
+const uploadLicenseDir = path.join(projectRoot, 'uploads', 'licenses');
 
-// Create the directory if it doesn't exist
-if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// Set up multer for file uploads
-const storage = multer.diskStorage({
-  destination(req, file, cb) {
-    cb(null, 'uploads/');
-  },
-  filename(req, file, cb) {
-    cb(
-      null,
-      `${file.fieldname}-${Date.now()}${path.extname(file.originalname)}`
-    );
-  },
+// Create the directories if they don't exist
+[uploadProfileDir, uploadLicenseDir].forEach(dir => {
+    if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+    }
 });
 
+// Set up multer for file uploads
 const profileImageStorage = multer.diskStorage({
   destination(req, file, cb) {
-    cb(null, uploadDir);
+    cb(null, uploadProfileDir);
   },
   filename(req, file, cb) {
     cb(null, `user-${req.user._id}-${Date.now()}${path.extname(file.originalname)}`);
   },
 });
 
-function checkProfileImageType(file, cb) {
-  const filetypes = /jpeg|jpg|png/;
+const licenseStorage = multer.diskStorage({
+  destination(req, file, cb) {
+    cb(null, uploadLicenseDir);
+  },
+  filename(req, file, cb) {
+    cb(null, `license-${req.user ? req.user._id : 'new'}-${Date.now()}${path.extname(file.originalname)}`);
+  },
+});
+
+function checkFileType(file, cb, allowedTypes) {
+  const filetypes = new RegExp(allowedTypes.join('|'));
   const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
   const mimetype = filetypes.test(file.mimetype);
 
   if (extname && mimetype) {
     return cb(null, true);
   } else {
-    cb('Profile image must be in JPEG, JPG, or PNG format');
+    cb(`Files must be in ${allowedTypes.join(', ')} format`);
   }
 }
 
 const uploadProfileImage = multer({
   storage: profileImageStorage,
-  fileFilter: function (req, file, cb) {
-    checkProfileImageType(file, cb);
-  },
+  fileFilter: (req, file, cb) => checkFileType(file, cb, ['jpeg', 'jpg', 'png']),
 });
 
-function checkFileType(file, cb) {
-  const filetypes = /jpeg|jpg|pdf|doc/;
-  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = filetypes.test(file.mimetype);
-
-  if (extname && mimetype) {
-    return cb(null, true);
-  } else {
-    cb('Files must be in JPEG, PDF, or DOC format');
-  }
-}
-
-const upload = multer({
-  storage,
-  fileFilter: function (req, file, cb) {
-    checkFileType(file, cb);
-  },
+const uploadLicense = multer({
+  storage: licenseStorage,
+  fileFilter: (req, file, cb) => checkFileType(file, cb, ['jpeg', 'jpg', 'pdf', 'doc', 'docx']),
 });
 
 // Register route with file uploads for specialists
 router.post(
   '/register',
-  upload.fields([
-    { name: 'currentPracticingLicense', maxCount: 1 },
-    { name: 'fullRegistrationCertificate', maxCount: 1 },
-  ]),
+  uploadLicense.single('currentPracticingLicense'),
   registerUser
 );
 
@@ -101,9 +82,7 @@ router.post('/forgot-password', forgotPassword);
 router.post('/reset-password/:token', resetPassword);
 router.route('/profile')
   .get(protect, getUserProfile)
-  .put(protect, uploadProfileImage.single('profileImage'), updateUserProfile);
+  .put(protect, uploadProfileImage.single('profileImage'), uploadLicense.single('currentPracticingLicense'), updateUserProfile);
 router.put('/availability', protect, updateUserAvailability);
 
 module.exports = router;
-
-

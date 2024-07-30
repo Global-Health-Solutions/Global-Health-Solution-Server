@@ -4,6 +4,7 @@ const Call = require("../models/Call");
 const User = require("../models/User");
 const { default: mongoose } = require("mongoose");
 
+
 // Generate Agora token
 exports.generateToken = (req, res) => {
   const appID = process.env.AGORA_APP_ID;

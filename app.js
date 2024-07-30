@@ -74,8 +74,7 @@ app.use((req, res, next) => {
 });
 
 // Routes
-const baseRoute = process.env.NODE_ENV === "production" ? '' : '/api';
-app.use(`${baseRoute}`, routes);
+app.use('/api', routes);
 
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 

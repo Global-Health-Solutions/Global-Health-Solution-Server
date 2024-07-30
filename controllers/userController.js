@@ -6,6 +6,59 @@ const sendEmail = require("../utils/sendEmail");
 const crypto = require("crypto");
 const path = require("path");
 
+
+// Register Admin
+const registerAdmin = async (req, res) => {
+  const { firstName, lastName, email, password, adminPassword } = req.body;
+
+  try {
+    const userExists = await User.findOne({ email });
+
+    if (userExists) {
+      return res.status(400).json({ message: 'User already exists' });
+    }
+
+    const admin = new User({
+      role: 'admin',
+      firstName,
+      lastName,
+      email,
+      password,
+      adminPassword
+    });
+
+    const createdAdmin = await admin.save();
+    res.status(201).json(createdAdmin);
+  } catch (error) {
+    console.error("Error registering admin:", error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// Authenticate Admin
+const authAdmin = async (req, res) => {
+  const { email, password, adminPassword } = req.body;
+
+  try {
+    const admin = await User.findOne({ email, role: 'admin' });
+
+    if (admin && (await admin.matchPassword(password)) && (await admin.matchAdminPassword(adminPassword))) {
+      res.json({
+        _id: admin._id,
+        firstName: admin.firstName,
+        lastName: admin.lastName,
+        email: admin.email,
+        role: admin.role,
+      });
+    } else {
+      res.status(401).json({ message: 'Invalid email or password or admin password' });
+    }
+  } catch (error) {
+    console.error("Error authenticating admin:", error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 // Register User or Specialist
 const registerUser = asyncHandler(async (req, res) => {
   const {
@@ -23,7 +76,6 @@ const registerUser = asyncHandler(async (req, res) => {
     recaptcha,
     specialistCategory,
     isOnline,
-    profileImage,
     doctorRegistrationNumber,
   } = req.body;
 
@@ -41,7 +93,10 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new Error("User already exists");
   }
 
-  const practicingLicense = req.file ? req.file.path : undefined;
+  let practicingLicense;
+  if (req.file) {
+    practicingLicense = '/uploads/licenses/' + path.basename(req.file.path);
+  }
 
   const user = await User.create({
     role,
@@ -57,7 +112,6 @@ const registerUser = asyncHandler(async (req, res) => {
     agreeTerms,
     specialistCategory: role === "specialist" ? specialistCategory : undefined,
     isOnline: role === "specialist" ? isOnline : undefined,
-    profileImage,
     doctorRegistrationNumber: role === "specialist" ? doctorRegistrationNumber : undefined,
     practicingLicense: role === "specialist" ? practicingLicense : undefined,
   });
@@ -273,16 +327,19 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     user.email = req.body.email || user.email;
     user.phone = req.body.phone || user.phone;
     user.agreeTerms = req.body.agreeTerms !== undefined ? req.body.agreeTerms : user.agreeTerms;
-    user.practicingLicense = req.file ? req.file.path : user.practicingLicense;
     user.doctorRegistrationNumber = req.body.doctorRegistrationNumber || user.doctorRegistrationNumber;
     user.isEmailVerified = req.body.isEmailVerified !== undefined ? req.body.isEmailVerified : user.isEmailVerified;
     user.isApproved = req.body.isApproved !== undefined ? req.body.isApproved : user.isApproved;
     user.isOnline = req.body.isOnline !== undefined ? req.body.isOnline : user.isOnline;
     user.specialistCategory = req.body.specialistCategory || user.specialistCategory;
-    user.profileImage = req.file ? req.file.path : user.profileImage;
 
-    if (req.file) {
-      user.profileImage = '/uploads/profile-images/' + path.basename(req.file.path);
+    if (req.files) {
+      if (req.files['profileImage']) {
+        user.profileImage = '/uploads/profile-images/' + path.basename(req.files['profileImage'][0].path);
+      }
+      if (req.files['currentPracticingLicense']) {
+        user.practicingLicense = '/uploads/licenses/' + path.basename(req.files['currentPracticingLicense'][0].path);
+      }
     }
 
     if (req.body.password) {
@@ -364,6 +421,8 @@ const updateUserAvailability = asyncHandler(async (req, res) => {
 });
 
 module.exports = {
+  registerAdmin,
+  authAdmin,
   registerUser,
   verifyOTP,
   resendOTP,
