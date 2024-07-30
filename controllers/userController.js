@@ -9,7 +9,7 @@ const path = require("path");
 
 // Register Admin
 const registerAdmin = async (req, res) => {
-  const { firstName, lastName, email, password, adminPassword } = req.body;
+  const { firstName, lastName, email, adminPassword } = req.body;
 
   try {
     const userExists = await User.findOne({ email });
@@ -23,7 +23,6 @@ const registerAdmin = async (req, res) => {
       firstName,
       lastName,
       email,
-      password,
       adminPassword
     });
 
@@ -37,18 +36,26 @@ const registerAdmin = async (req, res) => {
 
 // Authenticate Admin
 const authAdmin = async (req, res) => {
-  const { email, password, adminPassword } = req.body;
+  const { email, password } = req.body;
 
   try {
     const admin = await User.findOne({ email, role: 'admin' });
 
-    if (admin && (await admin.matchPassword(password)) && (await admin.matchAdminPassword(adminPassword))) {
+    if (admin) {
+      console.log('see admin here oh')
+    } else {
+      console.log('baba no admin here oh')
+
+    }
+
+    if (admin && ((await admin.matchAdminPassword(password)))) {
       res.json({
         _id: admin._id,
         firstName: admin.firstName,
         lastName: admin.lastName,
         email: admin.email,
         role: admin.role,
+        token: generateToken(admin._id),
       });
     } else {
       res.status(401).json({ message: 'Invalid email or password or admin password' });

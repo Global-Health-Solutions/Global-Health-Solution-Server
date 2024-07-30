@@ -4,7 +4,7 @@ const {
   registerAdmin,
   authAdmin,
 } = require('../controllers/userController');
-const { adminProtect } = require('../middlewares/adminMiddleware');
+const { protect } = require('../middlewares/authMiddleware');
 
 const router = express.Router();
 
@@ -12,6 +12,6 @@ router.post('/register', registerAdmin);
 router.post('/login', authAdmin);
 
 // Protect all routes below with adminProtect
-router.use(adminProtect);
+router.use(protect);
 
 module.exports = router;
