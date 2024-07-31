@@ -9,15 +9,14 @@ const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const session = require("cookie-session");
 const socket = require("./utils/socket");
-const fs = require("fs");
 const path = require("path");
 
 const app = express();
 
-const uploadDir = path.join(__dirname, "uploads", "profile-images");
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
+// const uploadDir = path.join(__dirname, "uploads", "profile-images");
+// if (!fs.existsSync(uploadDir)) {
+//   fs.mkdirSync(uploadDir, { recursive: true });
+// }
 
 // Enable CORS
 app.use(
