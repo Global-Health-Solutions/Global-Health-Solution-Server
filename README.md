@@ -61,6 +61,7 @@ Authorization: Bearer <your_token_here>
 Errors are returned in the following format:
 
 json
+
 {
 "message": "Error message here"
 }
@@ -77,6 +78,7 @@ json
 - **Data constraints:**
 
 json
+
 {
 "role": "[user|specialist]",
 "firstName": "string",
@@ -105,6 +107,7 @@ json
 - **Data constraints:**
 
 json
+
 {
 "email": "string",
 "otp": "string"
@@ -120,6 +123,7 @@ json
 - **Data constraints:**
 
 json
+
 {
 "email": "string"
 }
@@ -134,6 +138,7 @@ json
 - **Data constraints:**
 
 json
+
 {
 "email": "string",
 "password": "string"
@@ -149,6 +154,7 @@ json
 - **Data constraints:**
 
 json
+
 {
 "email": "string"
 }
@@ -163,6 +169,7 @@ json
 - **Data constraints:**
 
 json
+
 {
 "email": "string",
 "password": "string"
@@ -178,6 +185,7 @@ json
 - **Data constraints:**
 
 json
+
 {
 "email": "string"
 }
@@ -192,6 +200,7 @@ json
 - **Data constraints:**
 
 json
+
 {
 "password": "string"
 }
@@ -213,6 +222,7 @@ json
 - **Data constraints:** (All fields are optional)
 
 json
+
 {
 "firstName": "string",
 "lastName": "string",
@@ -237,6 +247,7 @@ json
 - **Data constraints:**
 
 json
+
 {
 "isOnline": "boolean"
 }
@@ -253,6 +264,7 @@ json
 - **Data constraints:**
 
 json
+
 {
 "specialistId": "string",
 "dateTime": "YYYY-MM-DDTHH:mm:ss.sssZ",
@@ -277,6 +289,7 @@ json
 - **Data constraints:**
 
 json
+
 {
 "status": "string",
 "notes": "string"
@@ -301,6 +314,7 @@ json
 - **Data constraints:**
 
 json
+
 {
 "appointmentId": "string"
 }
@@ -315,6 +329,7 @@ json
 - **Data constraints:**
 
 json
+
 {
 "callId": "string"
 }
@@ -352,6 +367,7 @@ json
 - **Data constraints:**
 
 json
+
 {
 "title": "string",
 "content": "string",
@@ -383,6 +399,7 @@ json
 - **Data constraints:**
 
 json
+
 {
 "title": "string",
 "content": "string",
@@ -409,6 +426,7 @@ json
 - **Data constraints:**
 
 json
+
 {
 "firstName": "string",
 "lastName": "string",
@@ -426,6 +444,7 @@ json
 - **Data constraints:**
 
 json
+
 {
 "email": "string",
 "password": "string"
@@ -488,6 +507,7 @@ json
 - **Data constraints:**
 
 json
+
 {
 "amount": "number"
 }
@@ -504,6 +524,7 @@ json
 - **Data constraints:**
 
 json
+
 {
 "symptoms": "string (comma-separated)"
 }
