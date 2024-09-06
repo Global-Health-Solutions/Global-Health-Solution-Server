@@ -6,7 +6,6 @@ const sendEmail = require("../utils/sendEmail");
 const crypto = require("crypto");
 const path = require("path");
 
-
 // Register Admin
 const registerAdmin = async (req, res) => {
   const { firstName, lastName, email, adminPassword } = req.body;
@@ -15,22 +14,22 @@ const registerAdmin = async (req, res) => {
     const userExists = await User.findOne({ email });
 
     if (userExists) {
-      return res.status(400).json({ message: 'User already exists' });
+      return res.status(400).json({ message: "User already exists" });
     }
 
     const admin = new User({
-      role: 'admin',
+      role: "admin",
       firstName,
       lastName,
       email,
-      adminPassword
+      adminPassword,
     });
 
     const createdAdmin = await admin.save();
     res.status(201).json(createdAdmin);
   } catch (error) {
     console.error("Error registering admin:", error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -39,16 +38,15 @@ const authAdmin = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const admin = await User.findOne({ email, role: 'admin' });
+    const admin = await User.findOne({ email, role: "admin" });
 
     if (admin) {
-      console.log('see admin here oh')
+      console.log("see admin here oh");
     } else {
-      console.log('baba no admin here oh')
-
+      console.log("baba no admin here oh");
     }
 
-    if (admin && ((await admin.matchAdminPassword(password)))) {
+    if (admin && (await admin.matchAdminPassword(password))) {
       res.json({
         _id: admin._id,
         firstName: admin.firstName,
@@ -58,11 +56,13 @@ const authAdmin = async (req, res) => {
         token: generateToken(admin._id),
       });
     } else {
-      res.status(401).json({ message: 'Invalid email or password or admin password' });
+      res
+        .status(401)
+        .json({ message: "Invalid email or password or admin password" });
     }
   } catch (error) {
     console.error("Error authenticating admin:", error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -102,7 +102,7 @@ const registerUser = asyncHandler(async (req, res) => {
 
   let practicingLicense;
   if (req.file) {
-    practicingLicense = '/uploads/licenses/' + path.basename(req.file.path);
+    practicingLicense = "/uploads/licenses/" + path.basename(req.file.path);
   }
 
   const user = await User.create({
@@ -119,7 +119,8 @@ const registerUser = asyncHandler(async (req, res) => {
     agreeTerms,
     specialistCategory: role === "specialist" ? specialistCategory : undefined,
     isOnline: role === "specialist" ? isOnline : undefined,
-    doctorRegistrationNumber: role === "specialist" ? doctorRegistrationNumber : undefined,
+    doctorRegistrationNumber:
+      role === "specialist" ? doctorRegistrationNumber : undefined,
     practicingLicense: role === "specialist" ? practicingLicense : undefined,
   });
 
@@ -133,10 +134,10 @@ const registerUser = asyncHandler(async (req, res) => {
   });
 
   res.status(201).json({
-    message: "Registration successful. Please check your email for the OTP to verify your account.",
+    message:
+      "Registration successful. Please check your email for the OTP to verify your account.",
   });
 });
-
 
 // Verify OTP
 const verifyOTP = asyncHandler(async (req, res) => {
@@ -181,7 +182,8 @@ const resendOTP = asyncHandler(async (req, res) => {
   });
 
   res.status(200).json({
-    message: "OTP resent successfully. Please check your email for the new OTP.",
+    message:
+      "OTP resent successfully. Please check your email for the new OTP.",
   });
 });
 
@@ -237,7 +239,9 @@ const forgotPassword = asyncHandler(async (req, res) => {
   const resetToken = user.generatePasswordResetToken();
   await user.save();
 
-  const resetUrl = `${req.protocol}://${req.get("host")}/reset-password/${resetToken}`;
+  const resetUrl = `${req.protocol}://${req.get(
+    "host"
+  )}/reset-password/${resetToken}`;
 
   const text = `Click this link to reset your password: ${resetUrl}`;
   const html = `<p>Click this link to reset your password: <a href="${resetUrl}">${resetUrl}</a></p>`;
@@ -258,7 +262,10 @@ const resetPassword = asyncHandler(async (req, res) => {
   const { token } = req.params;
   const { password } = req.body;
 
-  const resetPasswordToken = crypto.createHash("sha256").update(token).digest("hex");
+  const resetPasswordToken = crypto
+    .createHash("sha256")
+    .update(token)
+    .digest("hex");
 
   const user = await User.findOne({
     resetPasswordToken,
@@ -283,7 +290,6 @@ const resetPassword = asyncHandler(async (req, res) => {
 // Get user profile
 const getUserProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
-
 
   if (user) {
     res.json({
@@ -318,7 +324,6 @@ const getUserProfile = asyncHandler(async (req, res) => {
   }
 });
 
-
 // Update user profile
 const updateUserProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
@@ -333,19 +338,31 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     user.country = req.body.country || user.country;
     user.email = req.body.email || user.email;
     user.phone = req.body.phone || user.phone;
-    user.agreeTerms = req.body.agreeTerms !== undefined ? req.body.agreeTerms : user.agreeTerms;
-    user.doctorRegistrationNumber = req.body.doctorRegistrationNumber || user.doctorRegistrationNumber;
-    user.isEmailVerified = req.body.isEmailVerified !== undefined ? req.body.isEmailVerified : user.isEmailVerified;
-    user.isApproved = req.body.isApproved !== undefined ? req.body.isApproved : user.isApproved;
-    user.isOnline = req.body.isOnline !== undefined ? req.body.isOnline : user.isOnline;
-    user.specialistCategory = req.body.specialistCategory || user.specialistCategory;
+    user.agreeTerms =
+      req.body.agreeTerms !== undefined ? req.body.agreeTerms : user.agreeTerms;
+    user.doctorRegistrationNumber =
+      req.body.doctorRegistrationNumber || user.doctorRegistrationNumber;
+    user.isEmailVerified =
+      req.body.isEmailVerified !== undefined
+        ? req.body.isEmailVerified
+        : user.isEmailVerified;
+    user.isApproved =
+      req.body.isApproved !== undefined ? req.body.isApproved : user.isApproved;
+    user.isOnline =
+      req.body.isOnline !== undefined ? req.body.isOnline : user.isOnline;
+    user.specialistCategory =
+      req.body.specialistCategory || user.specialistCategory;
 
     if (req.files) {
-      if (req.files['profileImage']) {
-        user.profileImage = '/uploads/profile-images/' + path.basename(req.files['profileImage'][0].path);
+      if (req.files["profileImage"]) {
+        user.profileImage =
+          "/uploads/profile-images/" +
+          path.basename(req.files["profileImage"][0].path);
       }
-      if (req.files['currentPracticingLicense']) {
-        user.practicingLicense = '/uploads/licenses/' + path.basename(req.files['currentPracticingLicense'][0].path);
+      if (req.files["currentPracticingLicense"]) {
+        user.practicingLicense =
+          "/uploads/licenses/" +
+          path.basename(req.files["currentPracticingLicense"][0].path);
       }
     }
 
@@ -427,6 +444,28 @@ const updateUserAvailability = asyncHandler(async (req, res) => {
   }
 });
 
+// Update specialist availability
+const updateAvailability = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+
+    if (user && user.role === "specialist") {
+      user.availability = req.body.availability;
+      const updatedUser = await user.save();
+
+      res.json({
+        _id: updatedUser._id,
+        availability: updatedUser.availability,
+      });
+    } else {
+      res.status(404);
+      throw new Error("User not found or not a specialist");
+    }
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
 module.exports = {
   registerAdmin,
   authAdmin,
@@ -439,4 +478,5 @@ module.exports = {
   getUserProfile,
   updateUserProfile,
   updateUserAvailability,
+  updateAvailability,
 };

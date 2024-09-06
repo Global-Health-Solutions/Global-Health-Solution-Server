@@ -1,37 +1,62 @@
-const mongoose = require('mongoose');
-const bcrypt = require('bcryptjs');
-const crypto = require('crypto');
+const mongoose = require("mongoose");
+const bcrypt = require("bcryptjs");
+const crypto = require("crypto");
 
-const userSchema = new mongoose.Schema({
-  role: { type: String, enum: ['user', 'specialist', 'admin'], required: true },
-  firstName: { type: String, required: true },
-  lastName: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, required: true },
-  adminPassword: { type: String },
-  dateOfBirth: { type: Date },
-  gender: { type: String },
-  address: { type: String },
-  country: { type: String },
-  phone: { type: String },
-  agreeTerms: { type: Boolean, default: false },
-  practicingLicense: { type: String },
-  doctorRegistrationNumber: { type: String },
-  isApproved: { type: Boolean, default: false },
-  isEmailVerified: { type: Boolean, default: false },
-  loginTime: { type: Date, default: Date.now },
-  otp: { type: String },
-  otpExpires: { type: Date },
-  resetPasswordToken: { type: String },
-  resetPasswordExpires: { type: Date },
-  isOnline: { type: Boolean, default: false },
-  profileImage: { type: String }, 
-  specialistCategory: { type: String },
-}, { timestamps: true });
+const userSchema = new mongoose.Schema(
+  {
+    role: {
+      type: String,
+      enum: ["user", "specialist", "admin"],
+      required: true,
+    },
+    firstName: { type: String, required: true },
+    lastName: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    adminPassword: { type: String },
+    dateOfBirth: { type: Date },
+    gender: { type: String },
+    address: { type: String },
+    country: { type: String },
+    phone: { type: String },
+    agreeTerms: { type: Boolean, default: false },
+    practicingLicense: { type: String },
+    doctorRegistrationNumber: { type: String },
+    isApproved: { type: Boolean, default: false },
+    isEmailVerified: { type: Boolean, default: false },
+    loginTime: { type: Date, default: Date.now },
+    otp: { type: String },
+    otpExpires: { type: Date },
+    resetPasswordToken: { type: String },
+    resetPasswordExpires: { type: Date },
+    isOnline: { type: Boolean, default: false },
+    profileImage: { type: String },
+    specialistCategory: { type: String },
+    availability: [
+      {
+        day: {
+          type: String,
+          enum: [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+            "Sunday",
+          ],
+        },
+        startTime: String,
+        endTime: String,
+      },
+    ],
+  },
+  { timestamps: true }
+);
 
 // Hash password before saving
-userSchema.pre('save', async function (next) {
-  if (!this.isModified('password') && !this.isModified('adminPassword')) {
+userSchema.pre("save", async function (next) {
+  if (!this.isModified("password") && !this.isModified("adminPassword")) {
     return next();
   }
   const salt = await bcrypt.genSalt(10);
@@ -61,12 +86,15 @@ userSchema.methods.generateOTP = function () {
 
 // Generate password reset token
 userSchema.methods.generatePasswordResetToken = function () {
-  const resetToken = crypto.randomBytes(20).toString('hex');
-  this.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+  const resetToken = crypto.randomBytes(20).toString("hex");
+  this.resetPasswordToken = crypto
+    .createHash("sha256")
+    .update(resetToken)
+    .digest("hex");
   this.resetPasswordExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
   return resetToken;
 };
 
-const User = mongoose.model('User', userSchema);
+const User = mongoose.model("User", userSchema);
 
 module.exports = User;

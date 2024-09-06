@@ -1,15 +1,18 @@
-const express = require('express');
+const express = require("express");
 
-const userRoutes = require('./userRoutes');
+const userRoutes = require("./userRoutes");
 
-const callRoutes = require('./callRoutes');
+const callRoutes = require("./callRoutes");
 
-const chatbotRoutes = require('./chatbotRoutes')
+const chatbotRoutes = require("./chatbotRoutes");
 
-const paymentRoutes = require('./paymentRoutes');
+const paymentRoutes = require("./paymentRoutes");
 
-const adminRoutes = require('./adminRoutes');
+const blogRoutes = require("./blogRoutes");
 
+const adminRoutes = require("./adminRoutes");
+
+const appointmentRoutes = require("./appointmentRoutes");
 
 const router = express.Router();
 
@@ -22,10 +25,14 @@ router.use(`/users`, userRoutes);
 
 router.use(`/calls`, callRoutes);
 
-router.use(`/chatbot`, chatbotRoutes)
+router.use(`/chatbot`, chatbotRoutes);
 
-router.use(`/payment`, paymentRoutes)
+router.use(`/payment`, paymentRoutes);
 
-router.use('/admin', adminRoutes);
+router.use(`/blogs`, blogRoutes);
+
+router.use("/admin", adminRoutes);
+
+router.use("/appointments", appointmentRoutes);
 
 module.exports = router;

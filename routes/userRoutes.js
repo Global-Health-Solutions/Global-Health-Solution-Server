@@ -9,6 +9,7 @@ const {
   getUserProfile,
   updateUserProfile,
   updateUserAvailability,
+  updateAvailability,
 } = require("../controllers/userController");
 const { protect } = require("../middlewares/authMiddleware");
 const multer = require("multer");
@@ -90,15 +91,16 @@ router.post("/resend-otp", resendOTP);
 router.post("/login", authUser);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password/:token", resetPassword);
-router
-  .route("/profile")
-  .get(protect, getUserProfile)
-  .put(
-    // protect,
-    uploadProfileImage.single("profileImage"),
-    uploadLicense.single("currentPracticingLicense"),
-    updateUserProfile
-  );
+router.route("/profile").get(protect, getUserProfile).put(
+  // protect,
+  uploadProfileImage.single("profileImage"),
+  uploadLicense.single("currentPracticingLicense"),
+  updateUserProfile
+);
 router.put("/availability", protect, updateUserAvailability);
+
+router.put("/update-availability", protect, updateAvailability);
+
+router.put("/availability", protect, updateAvailability);
 
 module.exports = router;

@@ -20,12 +20,10 @@ const io = socket.init(server);
 io.on("connection", (socket) => {
   console.log("A user connected");
 
-  // Join a room (user ID or specialist ID)
   socket.on("join", (userId) => {
     socket.join(userId);
   });
 
-  // Handle call initiation
   socket.on("callInitiated", (callData) => {
     const { callId, channelName, callerId, receiverId, token } = callData;
     io.to(receiverId).emit("incomingCall", {
@@ -36,31 +34,25 @@ io.on("connection", (socket) => {
     });
   });
 
-  // Handle call acceptance
   socket.on("callAccepted", (callData) => {
-    const { callId, callerId, channelName, receiverId, token, status } =
-      callData;
+    const { callId, callerId, channelName, receiverId, token } = callData;
     io.to(callerId).emit("callAccepted", {
       callId,
       channelName,
       token,
-      status,
     });
     io.to(receiverId).emit("callAccepted", {
       callId,
       channelName,
       token,
-      status,
     });
   });
 
-  // Handle call rejection
   socket.on("callRejected", (callData) => {
     const { callId, receiverId } = callData;
     io.to(receiverId).emit("callRejected", { callId });
   });
 
-  // Handle call ending
   socket.on("callEnded", (callData) => {
     const { callId, receiverId } = callData;
     io.to(receiverId).emit("callEnded", { callId });
