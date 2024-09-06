@@ -523,10 +523,6 @@ The server uses Socket.IO for real-time communication. Here are the available ev
 
 For more details on how to use these events, please refer to the Socket.IO documentation and the server implementation.
 
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
 ## License
 
 This project is licensed under the ISC License.
