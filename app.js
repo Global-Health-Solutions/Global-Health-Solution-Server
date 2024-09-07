@@ -10,6 +10,7 @@ const cookieParser = require("cookie-parser");
 const session = require("cookie-session");
 const socket = require("./utils/socket");
 const path = require("path");
+const customCors = require("./utils/cors");
 
 const app = express();
 
@@ -19,13 +20,7 @@ const app = express();
 // }
 
 // Enable CORS
-app.use(
-  cors({
-    origin: "*",
-    methods: ["GET", "PATCH", "POST", "DELETE", "PUT"],
-    credentials: true,
-  })
-);
+app.use(customCors);
 
 // app.use(cookieParser());
 
@@ -75,7 +70,12 @@ app.use((req, res, next) => {
 // Routes
 app.use("/api", routes);
 
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+// Update the static file middleware
+app.use(
+  "/uploads",
+  customCors,
+  express.static(path.join(__dirname, "uploads"))
+);
 
 //just to test
 

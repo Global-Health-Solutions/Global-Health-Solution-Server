@@ -1,8 +1,7 @@
-const Appointment = require('../models/Appointment');
-const User = require('../models/User');
-const { generateAgoraToken } = require('../utils/agora');
+const Appointment = require("../models/Appointment");
+const { createNotification } = require("./notificationController");
 
-exports.createAppointment = async (req, res) => {
+const createAppointment = async (req, res) => {
   try {
     const { specialistId, dateTime, specialistCategory, notes } = req.body;
     const patientId = req.user._id;
@@ -12,10 +11,24 @@ exports.createAppointment = async (req, res) => {
       specialist: specialistId,
       dateTime,
       specialistCategory,
-      notes
+      notes,
     });
 
     await appointment.save();
+
+    await createNotification(patientId, {
+      type: "appointment",
+      content: `New appointment scheduled with ${specialistCategory} on ${dateTime}`,
+      relatedId: appointment._id,
+      onModel: "Appointment",
+    });
+
+    await createNotification(specialistId, {
+      type: "appointment",
+      content: `New appointment scheduled with a patient on ${dateTime}`,
+      relatedId: appointment._id,
+      onModel: "Appointment",
+    });
 
     res.status(201).json(appointment);
   } catch (error) {
@@ -23,21 +36,21 @@ exports.createAppointment = async (req, res) => {
   }
 };
 
-exports.getAppointments = async (req, res) => {
+const getAppointments = async (req, res) => {
   try {
     const userId = req.user._id;
     const userRole = req.user.role;
 
     let query;
-    if (userRole === 'specialist') {
+    if (userRole === "specialist") {
       query = { specialist: userId };
     } else {
       query = { patient: userId };
     }
 
     const appointments = await Appointment.find(query)
-      .populate('patient', 'firstName lastName')
-      .populate('specialist', 'firstName lastName specialistCategory')
+      .populate("patient", "firstName lastName")
+      .populate("specialist", "firstName lastName specialistCategory")
       .sort({ dateTime: 1 });
 
     res.json(appointments);
@@ -46,7 +59,7 @@ exports.getAppointments = async (req, res) => {
   }
 };
 
-exports.updateAppointment = async (req, res) => {
+const updateAppointment = async (req, res) => {
   try {
     const { id } = req.params;
     const { status, notes } = req.body;
@@ -58,7 +71,7 @@ exports.updateAppointment = async (req, res) => {
     );
 
     if (!appointment) {
-      return res.status(404).json({ message: 'Appointment not found' });
+      return res.status(404).json({ message: "Appointment not found" });
     }
 
     res.json(appointment);
@@ -67,13 +80,13 @@ exports.updateAppointment = async (req, res) => {
   }
 };
 
-exports.startAppointment = async (req, res) => {
+const startAppointment = async (req, res) => {
   try {
     const { id } = req.params;
     const appointment = await Appointment.findById(id);
 
     if (!appointment) {
-      return res.status(404).json({ message: 'Appointment not found' });
+      return res.status(404).json({ message: "Appointment not found" });
     }
 
     const channelName = `appointment_${appointment._id}`;
@@ -83,4 +96,11 @@ exports.startAppointment = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
+};
+
+module.exports = {
+  createAppointment,
+  getAppointments,
+  updateAppointment,
+  startAppointment,
 };

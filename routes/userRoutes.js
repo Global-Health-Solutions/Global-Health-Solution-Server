@@ -79,10 +79,56 @@ const uploadLicense = multer({
     checkFileType(file, cb, ["jpeg", "jpg", "pdf", "doc", "docx"]),
 });
 
+// New upload middleware for combined profile image and license uploads
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: function (req, file, cb) {
+      if (file.fieldname === "profileImage") {
+        cb(null, uploadProfileDir);
+      } else if (file.fieldname === "currentPracticingLicense") {
+        cb(null, uploadLicenseDir);
+      }
+    },
+    filename: function (req, file, cb) {
+      const userId = req.user ? req.user._id : "new";
+      const prefix = file.fieldname === "profileImage" ? "user" : "license";
+      cb(
+        null,
+        `${prefix}-${userId}-${Date.now()}${path.extname(file.originalname)}`
+      );
+    },
+  }),
+  fileFilter: (req, file, cb) => {
+    if (file.fieldname === "profileImage") {
+      checkFileType(file, cb, ["jpeg", "jpg", "png"]);
+    } else if (file.fieldname === "currentPracticingLicense") {
+      checkFileType(file, cb, ["jpeg", "jpg", "pdf", "doc", "docx"]);
+    } else {
+      cb(new Error("Unexpected field"));
+    }
+  },
+}).fields([
+  { name: "profileImage", maxCount: 1 },
+  { name: "currentPracticingLicense", maxCount: 1 },
+]);
+
 // Register route with file uploads for specialists
 router.post(
   "/register",
-  uploadLicense.single("currentPracticingLicense"),
+  (req, res, next) => {
+    upload(req, res, function (err) {
+      if (err instanceof multer.MulterError) {
+        return res
+          .status(400)
+          .json({ message: "File upload error: " + err.message });
+      } else if (err) {
+        return res
+          .status(500)
+          .json({ message: "Unknown error: " + err.message });
+      }
+      next();
+    });
+  },
   registerUser
 );
 
@@ -91,12 +137,28 @@ router.post("/resend-otp", resendOTP);
 router.post("/login", authUser);
 router.post("/forgot-password", forgotPassword);
 router.post("/reset-password/:token", resetPassword);
-router.route("/profile").get(protect, getUserProfile).put(
-  // protect,
-  uploadProfileImage.single("profileImage"),
-  uploadLicense.single("currentPracticingLicense"),
-  updateUserProfile
-);
+router
+  .route("/profile")
+  .get(protect, getUserProfile)
+  .put(
+    protect,
+    (req, res, next) => {
+      upload(req, res, function (err) {
+        if (err instanceof multer.MulterError) {
+          return res
+            .status(400)
+            .json({ message: "File upload error: " + err.message });
+        } else if (err) {
+          return res
+            .status(500)
+            .json({ message: "Unknown error: " + err.message });
+        }
+        next();
+      });
+    },
+    updateUserProfile
+  );
+
 router.put("/availability", protect, updateUserAvailability);
 
 router.put("/update-availability", protect, updateAvailability);

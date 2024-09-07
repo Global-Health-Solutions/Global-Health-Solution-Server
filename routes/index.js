@@ -14,6 +14,8 @@ const adminRoutes = require("./adminRoutes");
 
 const appointmentRoutes = require("./appointmentRoutes");
 
+const notificationRoutes = require("./notificationRoutes");
+
 const router = express.Router();
 
 router.use(`/users`, userRoutes);
@@ -34,5 +36,7 @@ router.use(`/blogs`, blogRoutes);
 router.use("/admin", adminRoutes);
 
 router.use("/appointments", appointmentRoutes);
+
+router.use("/notifications", notificationRoutes);
 
 module.exports = router;

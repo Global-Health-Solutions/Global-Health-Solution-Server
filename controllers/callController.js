@@ -6,8 +6,7 @@ const { RtcTokenBuilder, RtcRole } = require("agora-access-token");
 const Appointment = require("../models/Appointment");
 const { generateAgoraToken } = require("../utils/agora");
 
-// Initiate a call
-exports.initiateCall = async (req, res) => {
+const initiateCall = async (req, res) => {
   const { appointmentId } = req.body;
 
   try {
@@ -54,8 +53,7 @@ exports.initiateCall = async (req, res) => {
   }
 };
 
-// Accept call
-exports.acceptCall = async (req, res) => {
+const acceptCall = async (req, res) => {
   const { callId } = req.body;
 
   try {
@@ -69,7 +67,6 @@ exports.acceptCall = async (req, res) => {
       return res.status(404).json({ message: "Call not found" });
     }
 
-    // Notify the user that the call was accepted
     req.io.to(call.userId.toString()).emit("callAccepted", {
       callId: call._id,
       channelName: call.channelName,
@@ -87,8 +84,7 @@ exports.acceptCall = async (req, res) => {
   }
 };
 
-// Reject call
-exports.rejectCall = async (req, res) => {
+const rejectCall = async (req, res) => {
   const { callId } = req.body;
 
   try {
@@ -113,8 +109,7 @@ exports.rejectCall = async (req, res) => {
   }
 };
 
-// Update call status
-exports.updateCallStatus = async (req, res) => {
+const updateCallStatus = async (req, res) => {
   const { callId } = req.params;
   const { status } = req.body;
 
@@ -138,8 +133,7 @@ exports.updateCallStatus = async (req, res) => {
   }
 };
 
-// Get a single call
-exports.getCall = async (req, res) => {
+const getCall = async (req, res) => {
   const { callId } = req.params;
 
   if (!mongoose.Types.ObjectId.isValid(callId)) {
@@ -162,8 +156,7 @@ exports.getCall = async (req, res) => {
   }
 };
 
-// Get multiple calls
-exports.getCalls = async (req, res) => {
+const getCalls = async (req, res) => {
   const {
     userId,
     specialistId,
@@ -201,4 +194,13 @@ exports.getCalls = async (req, res) => {
     console.error("Error fetching calls:", error);
     res.status(500).json({ error: "Server error" });
   }
+};
+
+module.exports = {
+  initiateCall,
+  acceptCall,
+  rejectCall,
+  updateCallStatus,
+  getCall,
+  getCalls,
 };

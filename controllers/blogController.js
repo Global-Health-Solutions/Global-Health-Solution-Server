@@ -1,8 +1,7 @@
 const asyncHandler = require("express-async-handler");
 const Blog = require("../models/Blog");
 
-// Create a new blog post
-exports.createBlog = asyncHandler(async (req, res) => {
+const createBlog = asyncHandler(async (req, res) => {
   console.log("Received form data:", req.body);
 
   const { title, content, tags, isPublished } = req.body;
@@ -26,14 +25,12 @@ exports.createBlog = asyncHandler(async (req, res) => {
   res.status(201).json(createdBlog);
 });
 
-// Get all blog posts
-exports.getBlogs = asyncHandler(async (req, res) => {
+const getBlogs = asyncHandler(async (req, res) => {
   const blogs = await Blog.find().populate("author", "firstName lastName");
   res.json(blogs);
 });
 
-// Get a single blog post
-exports.getBlogById = asyncHandler(async (req, res) => {
+const getBlogById = asyncHandler(async (req, res) => {
   const blog = await Blog.findById(req.params.id).populate(
     "author",
     "firstName lastName"
@@ -46,8 +43,7 @@ exports.getBlogById = asyncHandler(async (req, res) => {
   }
 });
 
-// Update a blog post
-exports.updateBlog = asyncHandler(async (req, res) => {
+const updateBlog = asyncHandler(async (req, res) => {
   console.log("Received form data for update:", req.body);
 
   const { title, content, tags } = req.body;
@@ -74,8 +70,7 @@ exports.updateBlog = asyncHandler(async (req, res) => {
   }
 });
 
-// Delete a blog post
-exports.deleteBlog = asyncHandler(async (req, res) => {
+const deleteBlog = asyncHandler(async (req, res) => {
   const blog = await Blog.findById(req.params.id);
 
   if (blog) {
@@ -86,3 +81,11 @@ exports.deleteBlog = asyncHandler(async (req, res) => {
     throw new Error("Blog not found");
   }
 });
+
+module.exports = {
+  createBlog,
+  getBlogs,
+  getBlogById,
+  updateBlog,
+  deleteBlog,
+};

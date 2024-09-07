@@ -61,6 +61,10 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     console.log("User disconnected");
   });
+
+  socket.on("joinNotificationRoom", (userId) => {
+    socket.join(`notification_${userId}`);
+  });
 });
 
 server.listen(PORT, () => {

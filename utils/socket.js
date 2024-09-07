@@ -1,13 +1,14 @@
 // socket.js
+const socketIo = require("socket.io");
 let io;
 
 module.exports = {
-  init: (httpServer) => {
-    io = require('socket.io')(httpServer, {
+  init: (server) => {
+    io = socketIo(server, {
       cors: {
         origin: "*",
-        methods: ["GET", "POST"]
-      }
+        methods: ["GET", "POST"],
+      },
     });
     return io;
   },
@@ -16,5 +17,5 @@ module.exports = {
       throw new Error("Socket.io not initialized!");
     }
     return io;
-  }
+  },
 };

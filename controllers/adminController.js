@@ -1,6 +1,6 @@
-const User = require('../models/User'); // Adjust the path as necessary
+const User = require("../models/User");
 
-exports.getUsers = async (req, res) => {
+const getUsers = async (req, res) => {
   const {
     role,
     email,
@@ -17,10 +17,11 @@ exports.getUsers = async (req, res) => {
   if (role) query.role = role;
   if (email) query.email = email;
   if (country) query.country = country;
-  if (firstName) query.firstName = { $regex: firstName, $options: 'i' }; // Case-insensitive search
-  if (lastName) query.lastName = { $regex: lastName, $options: 'i' }; // Case-insensitive search
-  if (isApproved !== undefined) query.isApproved = isApproved === 'true'; // Convert to boolean
-  if (isEmailVerified !== undefined) query.isEmailVerified = isEmailVerified === 'true'; // Convert to boolean
+  if (firstName) query.firstName = { $regex: firstName, $options: "i" };
+  if (lastName) query.lastName = { $regex: lastName, $options: "i" };
+  if (isApproved !== undefined) query.isApproved = isApproved === "true";
+  if (isEmailVerified !== undefined)
+    query.isEmailVerified = isEmailVerified === "true";
 
   if (startDate && endDate) {
     query.createdAt = {
@@ -41,4 +42,8 @@ exports.getUsers = async (req, res) => {
     console.error("Error fetching users:", error);
     res.status(500).json({ error: "Server error" });
   }
+};
+
+module.exports = {
+  getUsers,
 };

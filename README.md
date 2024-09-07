@@ -43,6 +43,7 @@ EMAIL_PASS=your_email_password
 RECAPTCHA_SECRET_KEY=your_recaptcha_secret_key
 AGORA_APP_ID=your_agora_app_id
 AGORA_APP_CERTIFICATE=your_agora_app_certificate
+SENDGRID_API_KEY=your_sendgrid_api_key
 
 ## API Documentation
 
@@ -239,18 +240,32 @@ json
 
 - **Success Response:** `200 OK`
 
-##### Update User Availability
+##### Update User Availability (Toggle Online Status)
 
 - **URL:** `/users/availability`
 - **Method:** `PUT`
 - **Auth required:** Yes
+- **Description:** Toggles the user's online status
+- **Success Response:** `200 OK`
+
+##### Update Specialist Availability Schedule
+
+- **URL:** `/users/update-availability`
+- **Method:** `PUT`
+- **Auth required:** Yes
 - **Data constraints:**
 
-json
-
+```json
 {
-"isOnline": "boolean"
+  "availability": [
+    {
+      "day": "string",
+      "startTime": "HH:mm",
+      "endTime": "HH:mm"
+    }
+  ]
 }
+```
 
 - **Success Response:** `200 OK`
 
@@ -303,6 +318,14 @@ json
 - **Method:** `POST`
 - **Auth required:** Yes
 - **Success Response:** `200 OK`
+- **Response body:**
+
+```json
+{
+  "channelName": "string",
+  "token": "string"
+}
+```
 
 #### Calls
 
@@ -355,6 +378,21 @@ json
   - `specialistCategory`: string
   - `startDate`: YYYY-MM-DD
   - `endDate`: YYYY-MM-DD
+- **Success Response:** `200 OK`
+
+##### Update Call Status
+
+- **URL:** `/calls/:callId/status`
+- **Method:** `PATCH`
+- **Auth required:** Yes
+- **Data constraints:**
+
+```json
+{
+  "status": "string"
+}
+```
+
 - **Success Response:** `200 OK`
 
 #### Blogs
@@ -452,98 +490,39 @@ json
 
 - **Success Response:** `200 OK`
 
-##### Check Unapproved Users
+#### Notifications
 
-- **URL:** `/admin/check-unapproved`
+##### Get Notifications
+
+- **URL:** `/notifications`
 - **Method:** `GET`
 - **Auth required:** Yes
 - **Success Response:** `200 OK`
+- **Response body:** Array of notification objects
 
-##### Get Unapproved Specialists
+##### Mark Notification as Read
 
-- **URL:** `/admin/unapproved-specialists`
-- **Method:** `GET`
+- **URL:** `/notifications/:id/read`
+- **Method:** `PUT`
 - **Auth required:** Yes
 - **Success Response:** `200 OK`
+- **Response body:** Updated notification object
 
-##### Fetch User
+Note: Notifications are automatically created for various events such as new appointments, messages, and system updates. The `createNotification` function is used internally to create notifications for various events. It also emits a `newNotification` event via Socket.IO to the user's notification room.
 
-- **URL:** `/admin/fetch-user/:userId`
-- **Method:** `GET`
-- **Auth required:** Yes
-- **Success Response:** `200 OK`
-
-##### Approve User
-
-- **URL:** `/admin/approve-user/:userId`
-- **Method:** `PATCH`
-- **Auth required:** Yes
-- **Success Response:** `200 OK`
-
-##### Get Users
-
-- **URL:** `/admin/get-users`
-- **Method:** `GET`
-- **Auth required:** Yes
-- **Query Parameters:**
-  - `role`: string
-  - `email`: string
-  - `country`: string
-  - `firstName`: string
-  - `lastName`: string
-  - `isApproved`: boolean
-  - `isEmailVerified`: boolean
-  - `startDate`: YYYY-MM-DD
-  - `endDate`: YYYY-MM-DD
-- **Success Response:** `200 OK`
-
-#### Payment
-
-##### Create Payment Intent
-
-- **URL:** `/payment/create-payment-intent`
-- **Method:** `POST`
-- **Auth required:** Yes
-- **Data constraints:**
-
-json
-
-{
-"amount": "number"
-}
-
-- **Success Response:** `200 OK`
-
-#### Chatbot
-
-##### Predict Disease
-
-- **URL:** `/chatbot/predict_disease`
-- **Method:** `POST`
-- **Auth required:** No
-- **Data constraints:**
-
-json
-
-{
-"symptoms": "string (comma-separated)"
-}
-
-- **Success Response:** `200 OK`
-
-## Websocket Events
+#### Websocket Events
 
 The server uses Socket.IO for real-time communication. Here are the available events:
 
+- `notification_${userId}`: Join a room for receiving user-specific notifications
 - `join`: Join a room with the user's ID
 - `callInitiated`: Emitted when a call is initiated
 - `incomingCall`: Received when there's an incoming call
 - `callAccepted`: Emitted and received when a call is accepted
 - `callRejected`: Emitted and received when a call is rejected
 - `callEnded`: Emitted and received when a call ends
+- `newNotification`: Received when a new notification is created for the user
 
-For more details on how to use these events, please refer to the Socket.IO documentation and the server implementation.
+#### License
 
-## License
-
-This project is licensed under the ISC License.
+This project is licensed under the [MIT License](LICENSE).
