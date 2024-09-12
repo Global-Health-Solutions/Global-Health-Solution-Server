@@ -466,6 +466,29 @@ const updateAvailability = async (req, res) => {
   }
 };
 
+// Get available specialist by category
+const getAvailableSpecialist = asyncHandler(async (req, res) => {
+  const { category } = req.params;
+  const activeThreshold = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+  const availableSpecialists = await User.find({
+    role: "specialist",
+    specialistCategory: category,
+    isOnline: true,
+    lastActiveTime: { $gte: new Date(Date.now() - activeThreshold) },
+  })
+    .sort({ lastActiveTime: -1 }) // Sort by last active time in descending order
+    .select("-password")
+    .limit(1); // Limit to 1 result
+
+  if (availableSpecialists.length > 0) {
+    res.json(availableSpecialists[0]);
+  } else {
+    res.status(404);
+    throw new Error("No available specialist found for this category");
+  }
+});
+
 module.exports = {
   registerAdmin,
   authAdmin,
@@ -479,4 +502,5 @@ module.exports = {
   updateUserProfile,
   updateUserAvailability,
   updateAvailability,
+  getAvailableSpecialist,
 };

@@ -2,23 +2,31 @@ const express = require("express");
 const router = express.Router();
 const {
   initiateCall,
-  updateCallStatus,
   acceptCall,
+  endCall,
   getCall,
   getCalls,
+  updateCallStatus,
+  rejectCall,
 } = require("../controllers/callController");
+const { protect } = require("../middlewares/authMiddleware");
 
 // Initiate a call
-router.post("/initiate", initiateCall);
+router.post("/initiate", protect, initiateCall);
 
 // Accept call
-router.post("/accept", acceptCall);
+router.patch("/accept/:callId", protect, acceptCall);
+
+// End call
+router.patch("/end/:callId", protect, endCall);
+
+// Get call history
+router.get("/history", protect, getCalls);
+
+// Get current call
+router.get("/current/:callId", protect, getCall);
 
 // Update call status
-router.patch("/status/:callId", updateCallStatus);
-
-router.get("/get-call/:callId", getCall);
-
-router.get("/get-calls", getCalls);
+router.patch("/status/:callId", protect, updateCallStatus);
 
 module.exports = router;

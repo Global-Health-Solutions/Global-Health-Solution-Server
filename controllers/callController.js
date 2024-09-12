@@ -1,35 +1,25 @@
-// controllers/callController.js
 const Call = require("../models/Call");
 const User = require("../models/User");
-const { default: mongoose } = require("mongoose");
-const { RtcTokenBuilder, RtcRole } = require("agora-access-token");
-const Appointment = require("../models/Appointment");
 const { generateAgoraToken } = require("../utils/agora");
 
 const initiateCall = async (req, res) => {
-  const { appointmentId } = req.body;
+  const { userId, specialistId, specialistCategory } = req.body;
 
   try {
-    const appointment = await Appointment.findById(appointmentId)
-      .populate("patient", "id")
-      .populate("specialist", "id isOnline");
+    const specialist = await User.findById(specialistId);
 
-    if (!appointment) {
-      return res.status(404).json({ message: "Appointment not found" });
-    }
-
-    if (!appointment.specialist.isOnline) {
+    if (!specialist || !specialist.isOnline) {
       return res.status(400).json({ message: "Specialist is not available" });
     }
 
-    const channelName = `appointment_${appointment._id}`;
+    const channelName = `call_${Date.now()}`;
     const token = generateAgoraToken(channelName);
 
     const call = new Call({
-      userId: appointment.patient._id,
-      specialistId: appointment.specialist._id,
+      userId,
+      specialistId,
       channelName,
-      specialistCategory: appointment.specialistCategory,
+      specialistCategory,
       status: "pending",
     });
     await call.save();
@@ -37,14 +27,14 @@ const initiateCall = async (req, res) => {
     res.json({
       callId: call._id,
       channelName,
-      specialistId: appointment.specialist._id,
+      specialistId,
       token,
     });
 
-    req.io.to(appointment.specialist._id.toString()).emit("incomingCall", {
+    req.io.to(specialistId.toString()).emit("incomingCall", {
       callId: call._id,
       channelName,
-      callerId: appointment.patient._id,
+      callerId: userId,
       token,
     });
   } catch (error) {
@@ -54,30 +44,36 @@ const initiateCall = async (req, res) => {
 };
 
 const acceptCall = async (req, res) => {
-  const { callId } = req.body;
+  const { callId } = req.params;
 
   try {
     const call = await Call.findByIdAndUpdate(
       callId,
-      { status: "ongoing" },
+      { status: "accepted" },
       { new: true }
-    );
+    ).populate("userId specialistId");
 
     if (!call) {
       return res.status(404).json({ message: "Call not found" });
     }
 
+    const token = generateAgoraToken(call.channelName);
+
     req.io.to(call.userId.toString()).emit("callAccepted", {
       callId: call._id,
       channelName: call.channelName,
+      token,
+      status: "accepted",
     });
 
     req.io.to(call.specialistId.toString()).emit("callAccepted", {
       callId: call._id,
       channelName: call.channelName,
+      token,
+      status: "accepted",
     });
 
-    res.json({ message: "Call accepted", call });
+    res.json({ message: "Call accepted", call, token });
   } catch (error) {
     console.error("Error accepting call:", error);
     res.status(500).json({ message: "Failed to accept call" });
@@ -113,7 +109,7 @@ const updateCallStatus = async (req, res) => {
   const { callId } = req.params;
   const { status } = req.body;
 
-  if (!callId || !mongoose.Types.ObjectId.isValid(callId)) {
+  if (!callId || !Call.findById(callId)) {
     return res.status(400).json({ error: "Invalid call ID" });
   }
 
@@ -136,7 +132,7 @@ const updateCallStatus = async (req, res) => {
 const getCall = async (req, res) => {
   const { callId } = req.params;
 
-  if (!mongoose.Types.ObjectId.isValid(callId)) {
+  if (!Call.findById(callId)) {
     return res.status(400).json({ error: "Invalid call ID" });
   }
 
@@ -196,11 +192,49 @@ const getCalls = async (req, res) => {
   }
 };
 
+const endCall = async (req, res) => {
+  const { callId } = req.params;
+
+  if (!callId || !Call.findById(callId)) {
+    return res.status(400).json({ error: "Invalid call ID" });
+  }
+
+  try {
+    const call = await Call.findByIdAndUpdate(
+      callId,
+      { status: "completed", endTime: Date.now() },
+      { new: true }
+    );
+
+    if (!call) {
+      return res.status(404).json({ message: "Call not found" });
+    }
+
+    // Notify both users that the call has ended
+    req.io.to(call.userId.toString()).emit("callEnded", {
+      callId: call._id,
+      channelName: call.channelName,
+    });
+
+    req.io.to(call.specialistId.toString()).emit("callEnded", {
+      callId: call._id,
+      channelName: call.channelName,
+    });
+
+    res.json({ message: "Call ended", call });
+  } catch (error) {
+    console.error("Error ending call:", error);
+    res.status(500).json({ message: "Failed to end call" });
+  }
+};
+
 module.exports = {
   initiateCall,
   acceptCall,
   rejectCall,
   updateCallStatus,
+  generateAgoraToken,
   getCall,
   getCalls,
+  endCall, // Add this to the exports
 };

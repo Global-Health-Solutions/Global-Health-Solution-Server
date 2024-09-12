@@ -2,10 +2,14 @@ const Notification = require("../models/Notification");
 const asyncHandler = require("express-async-handler");
 
 const getNotifications = asyncHandler(async (req, res) => {
-  const notifications = await Notification.find({ user: req.user._id })
-    .sort({ createdAt: -1 })
-    .limit(20);
-  res.json(notifications);
+  try {
+    const notifications = await Notification.find({ user: req.user._id })
+      .sort({ createdAt: -1 })
+      .limit(20);
+    res.json(notifications);
+  } catch (error) {
+    res.status(500).json({ message: "Error fetching notifications" });
+  }
 });
 
 const markAsRead = asyncHandler(async (req, res) => {

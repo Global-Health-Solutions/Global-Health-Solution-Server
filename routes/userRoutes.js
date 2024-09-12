@@ -10,6 +10,7 @@ const {
   updateUserProfile,
   updateUserAvailability,
   updateAvailability,
+  getAvailableSpecialist,
 } = require("../controllers/userController");
 const { protect } = require("../middlewares/authMiddleware");
 const multer = require("multer");
@@ -164,5 +165,7 @@ router.put("/availability", protect, updateUserAvailability);
 router.put("/update-availability", protect, updateAvailability);
 
 router.put("/availability", protect, updateAvailability);
+
+router.get("/specialists/available/:category", protect, getAvailableSpecialist);
 
 module.exports = router;
