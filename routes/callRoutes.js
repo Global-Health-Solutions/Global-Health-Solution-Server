@@ -7,9 +7,13 @@ const {
   getCall,
   getCalls,
   updateCallStatus,
+  generateToken,
   rejectCall,
 } = require("../controllers/callController");
 const { protect } = require("../middlewares/authMiddleware");
+
+// Generate Agora Token
+router.get("/agora-token/:channelName", protect, generateToken);
 
 // Initiate a call
 router.post("/initiate", protect, initiateCall);

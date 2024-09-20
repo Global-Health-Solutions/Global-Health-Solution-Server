@@ -73,7 +73,11 @@ const acceptCall = async (req, res) => {
       status: "accepted",
     });
 
-    res.json({ message: "Call accepted", call, token });
+    res.json({
+      message: "Call accepted",
+      call: { ...call.toObject(), callId: call._id },
+      token,
+    });
   } catch (error) {
     console.error("Error accepting call:", error);
     res.status(500).json({ message: "Failed to accept call" });
@@ -228,12 +232,26 @@ const endCall = async (req, res) => {
   }
 };
 
+const generateToken = async (req, res) => {
+  const { channelName } = req.params;
+  try {
+    console.log("Generating token for channel:", channelName);
+    const token = generateAgoraToken(channelName);
+    const appId = process.env.AGORA_APP_ID;
+    console.log("Generated token and appId:", { token, appId, channelName });
+    res.json({ token, appId, channelName });
+  } catch (error) {
+    console.error("Error generating Agora token:", error);
+    res.status(500).json({ message: "Failed to generate Agora token" });
+  }
+};
+
 module.exports = {
   initiateCall,
   acceptCall,
   rejectCall,
   updateCallStatus,
-  generateAgoraToken,
+  generateToken,
   getCall,
   getCalls,
   endCall, // Add this to the exports

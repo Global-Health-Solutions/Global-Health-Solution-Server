@@ -1,12 +1,12 @@
 const dotenv = require("dotenv");
+dotenv.config();
+
 const connectDB = require("./config/db");
 const app = require("./app");
 const http = require("http");
 const socket = require("./utils/socket");
 // const Call = require("./models/Call")
 // const mongoose = require("mongoose")
-
-dotenv.config();
 
 // Connect to the database
 connectDB();
