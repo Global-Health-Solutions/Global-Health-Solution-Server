@@ -22,6 +22,7 @@ const callSchema = new mongoose.Schema(
     startTime: { type: Date, default: Date.now },
     endTime: { type: Date },
     specialistCategory: { type: String, required: true },
+    duration: { type: Number, required: true }, // Duration in seconds
   },
   { timestamps: true }
 );

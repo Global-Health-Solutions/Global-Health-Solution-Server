@@ -3,7 +3,7 @@ const User = require("../models/User");
 const { generateAgoraToken } = require("../utils/agora");
 
 const initiateCall = async (req, res) => {
-  const { userId, specialistId, specialistCategory } = req.body;
+  const { userId, specialistId, specialistCategory, duration } = req.body;
 
   try {
     const specialist = await User.findById(specialistId);
@@ -21,6 +21,7 @@ const initiateCall = async (req, res) => {
       channelName,
       specialistCategory,
       status: "pending",
+      duration, // Add this line
     });
     await call.save();
 
@@ -29,6 +30,7 @@ const initiateCall = async (req, res) => {
       channelName,
       specialistId,
       token,
+      duration, // Add this line
     });
 
     req.io.to(specialistId.toString()).emit("incomingCall", {
@@ -36,6 +38,7 @@ const initiateCall = async (req, res) => {
       channelName,
       callerId: userId,
       token,
+      duration, // Add this line
     });
   } catch (error) {
     console.error("Error initiating call:", error);
