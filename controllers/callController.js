@@ -3,27 +3,26 @@ const User = require("../models/User");
 const { generateAgoraToken } = require("../utils/agora");
 
 const initiateCall = async (req, res) => {
+  console.log("Received call initiation request:", req.body);
   const { userId, specialistId, specialistCategory, duration } = req.body;
 
+  const channelName = `call_${Date.now()}`;
+  const token = generateAgoraToken(channelName);
+
   try {
-    const specialist = await User.findById(specialistId);
-
-    if (!specialist || !specialist.isOnline) {
-      return res.status(400).json({ message: "Specialist is not available" });
-    }
-
-    const channelName = `call_${Date.now()}`;
-    const token = generateAgoraToken(channelName);
-
     const call = new Call({
       userId,
       specialistId,
       channelName,
-      specialistCategory,
       status: "pending",
-      duration, // Add this line
+      specialistCategory,
+      duration,
+      startTime: new Date(),
     });
-    await call.save();
+
+    console.log("Attempting to save call:", call);
+    const savedCall = await call.save();
+    console.log("Call saved successfully:", savedCall);
 
     res.json({
       callId: call._id,
@@ -42,7 +41,9 @@ const initiateCall = async (req, res) => {
     });
   } catch (error) {
     console.error("Error initiating call:", error);
-    res.status(500).json({ message: "Failed to initiate call" });
+    res
+      .status(500)
+      .json({ message: "Failed to initiate call", error: error.message });
   }
 };
 
