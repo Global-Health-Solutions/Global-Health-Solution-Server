@@ -69,6 +69,7 @@ app.use((req, res, next) => {
 
 // Routes
 app.use("/api", routes);
+app.use("/api/medical-file", require("./routes/medicalFileRoutes"));
 
 // Update the static file middleware
 app.use(
