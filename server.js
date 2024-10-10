@@ -5,8 +5,8 @@ const connectDB = require("./config/db");
 const app = require("./app");
 const http = require("http");
 const socket = require("./utils/socket");
-// const Call = require("./models/Call")
-// const mongoose = require("mongoose")
+// const Call = require("./models/Call");
+// const mongoose = require("mongoose");
 
 // Connect to the database
 connectDB();
@@ -66,6 +66,19 @@ io.on("connection", (socket) => {
     socket.join(`notification_${userId}`);
   });
 });
+
+// async function deleteAllDocuments() {
+//   try {
+//     const result = await Call.deleteMany({});
+//     console.log(`${result.deletedCount} documents were deleted.`);
+//   } catch (error) {
+//     console.error("Error deleting documents:", error);
+//   } finally {
+//     mongoose.connection.close();
+//   }
+// }
+
+// deleteAllDocuments();
 
 server.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);

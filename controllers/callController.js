@@ -161,6 +161,7 @@ const getCall = async (req, res) => {
 };
 
 const getCalls = async (req, res) => {
+  console.log("Received getCalls request:", req.query);
   const {
     userId,
     specialistId,
@@ -210,7 +211,7 @@ const endCall = async (req, res) => {
   try {
     const call = await Call.findByIdAndUpdate(
       callId,
-      { status: "completed", endTime: Date.now() },
+      { status: "completed", endTime: new Date.now() },
       { new: true }
     );
 
