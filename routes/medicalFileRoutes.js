@@ -6,14 +6,21 @@ const { protect, authorize } = require("../middlewares/authMiddleware");
 router.get(
   "/:patientId",
   protect,
-  authorize(['specialist', 'admin']),
+  authorize(["specialist", "admin"]),
   medicalFileController.getMedicalFile
 );
 router.put(
   "/:patientId",
   protect,
-  authorize(['specialist']),
+  authorize(["specialist"]),
   medicalFileController.updateMedicalFile
+);
+
+// New route for accessing prescriptions without special role authorization
+router.get(
+  "/:patientId/prescriptions",
+  protect,
+  medicalFileController.getPrescriptions
 );
 
 module.exports = router;

@@ -16,6 +16,38 @@ const noteSchema = new mongoose.Schema({
   },
 });
 
+const prescriptionSchema = new mongoose.Schema({
+  medication: {
+    type: String,
+    required: true,
+  },
+  dosage: {
+    type: String,
+    required: true,
+  },
+  frequency: {
+    type: String,
+    required: true,
+  },
+  startDate: {
+    type: Date,
+    required: true,
+  },
+  endDate: {
+    type: Date,
+    required: true,
+  },
+  specialistId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+  date: {
+    type: Date,
+    default: Date.now,
+  },
+});
+
 const medicalFileSchema = new mongoose.Schema({
   patientId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -23,6 +55,7 @@ const medicalFileSchema = new mongoose.Schema({
     required: true,
   },
   notes: [noteSchema],
+  prescriptions: [prescriptionSchema],
   lastUpdated: {
     type: Date,
     default: Date.now,

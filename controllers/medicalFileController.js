@@ -13,7 +13,7 @@ exports.getMedicalFile = async (req, res) => {
     }
 
     let medicalFile = await MedicalFile.findOne({ patientId }).populate(
-      "notes.specialistId",
+      "notes.specialistId prescriptions.specialistId",
       "firstName lastName specialistCategory"
     );
 
@@ -24,6 +24,7 @@ exports.getMedicalFile = async (req, res) => {
       medicalFile = new MedicalFile({
         patientId,
         notes: [],
+        prescriptions: [],
       });
       await medicalFile.save();
     }
@@ -41,6 +42,7 @@ exports.getMedicalFile = async (req, res) => {
         conditions: patient.conditions,
       },
       notes: medicalFile.notes,
+      prescriptions: medicalFile.prescriptions,
     };
 
     console.log("Sending medical file response:", response);
@@ -56,11 +58,12 @@ exports.getMedicalFile = async (req, res) => {
 exports.updateMedicalFile = async (req, res) => {
   try {
     const patientId = req.params.patientId;
-    const { content } = req.body;
+    const { content, prescription } = req.body;
     const specialistId = req.user._id;
 
     console.log("Updating medical file for patientId:", patientId);
     console.log("Content:", content);
+    console.log("Prescription:", prescription);
     console.log("SpecialistId:", specialistId);
 
     let medicalFile = await MedicalFile.findOne({ patientId });
@@ -70,10 +73,18 @@ exports.updateMedicalFile = async (req, res) => {
       medicalFile = new MedicalFile({
         patientId,
         notes: [],
+        prescriptions: [],
       });
     }
 
-    medicalFile.notes.push({ content, specialistId });
+    if (content) {
+      medicalFile.notes.push({ content, specialistId });
+    }
+
+    if (prescription) {
+      medicalFile.prescriptions.push({ ...prescription, specialistId });
+    }
+
     medicalFile.lastUpdated = Date.now();
 
     await medicalFile.save();
@@ -94,6 +105,7 @@ exports.updateMedicalFile = async (req, res) => {
         conditions: patient.conditions,
       },
       notes: medicalFile.notes,
+      prescriptions: medicalFile.prescriptions,
     };
 
     console.log("Medical file updated successfully");
@@ -103,5 +115,30 @@ exports.updateMedicalFile = async (req, res) => {
     res
       .status(500)
       .json({ message: "Error updating medical file", error: error.message });
+  }
+};
+
+exports.getPrescriptions = async (req, res) => {
+  try {
+    const patientId = req.params.patientId;
+    console.log("Getting prescriptions for patientId:", patientId);
+
+    const medicalFile = await MedicalFile.findOne({ patientId }).populate(
+      "prescriptions.specialistId",
+      "firstName lastName specialistCategory"
+    );
+
+    if (!medicalFile) {
+      console.log("Medical file not found for patientId:", patientId);
+      return res.status(404).json({ message: "Medical file not found" });
+    }
+
+    console.log("Sending prescriptions response");
+    res.status(200).json({ prescriptions: medicalFile.prescriptions });
+  } catch (error) {
+    console.error("Error fetching prescriptions:", error);
+    res
+      .status(500)
+      .json({ message: "Error fetching prescriptions", error: error.message });
   }
 };
