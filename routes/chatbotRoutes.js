@@ -2,14 +2,14 @@ const express = require("express");
 const router = express.Router();
 const axios = require("axios");
 
-const apiUrl = "https://diseaseprediction-rnbf.onrender.com/ask";
-// const apiUrl = "https://aiconsultdemo.onrender.com/predict_disease";
+// const apiUrl = "https://diseaseprediction-rnbf.onrender.com/ask";
+const apiUrl = "https://aiconsultdemo.onrender.com/predict_disease";
 
 router.post("/predict_disease", async (req, res) => {
   console.log("I'm Here!");
   try {
-    const { question } = req.body;
-    const response = await axios.post(apiUrl, { question });
+    const { symptoms } = req.body;
+    const response = await axios.post(apiUrl, { symptoms });
     res.json(response.data);
   } catch (error) {
     console.error("Error:", error);
