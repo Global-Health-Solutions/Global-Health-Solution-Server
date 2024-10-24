@@ -1,7 +1,7 @@
 const cors = require("cors");
 
 const corsOptions = {
-  origin: true,
+  origin: "*",
   methods: ["GET", "PATCH", "POST", "DELETE", "PUT"],
   credentials: true,
 };
