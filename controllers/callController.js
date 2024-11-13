@@ -251,6 +251,39 @@ const generateToken = async (req, res) => {
   }
 };
 
+const searchCalls = async (req, res) => {
+  const { search, status, startDate, endDate } = req.query;
+  const query = {};
+
+  if (search) {
+    query.$or = [
+      { "userId.name": { $regex: search, $options: "i" } },
+      { "specialistId.name": { $regex: search, $options: "i" } },
+      { specialistCategory: { $regex: search, $options: "i" } },
+    ];
+  }
+
+  if (status) query.status = status;
+  if (startDate && endDate) {
+    query.startTime = {
+      $gte: new Date(startDate),
+      $lte: new Date(endDate),
+    };
+  }
+
+  try {
+    const calls = await Call.find(query)
+      .populate("userId", "name email")
+      .populate("specialistId", "name email specialistCategory")
+      .sort({ startTime: -1 });
+
+    res.json(calls);
+  } catch (error) {
+    console.error("Error searching calls:", error);
+    res.status(500).json({ message: "Failed to search calls" });
+  }
+};
+
 module.exports = {
   initiateCall,
   acceptCall,
@@ -260,4 +293,5 @@ module.exports = {
   getCall,
   getCalls,
   endCall, // Add this to the exports
+  searchCalls,
 };

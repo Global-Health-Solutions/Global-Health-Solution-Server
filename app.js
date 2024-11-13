@@ -64,6 +64,8 @@ app.use(mongosanitize());
 // Make io available to our router
 app.use((req, res, next) => {
   req.io = socket.getIO();
+  req.setTimeout(30000); // 30 second timeout
+  res.setTimeout(30000);
   next();
 });
 
@@ -83,6 +85,18 @@ app.use(
 app.get("/test", (req, res) => {
   console.log("it is working ");
   res.json({ message: "This is the get-calls route" });
+});
+
+// Add better error handling for connection issues
+app.use((err, req, res, next) => {
+  if (err.code === "ECONNRESET") {
+    console.error("Connection reset error:", err);
+    return res.status(500).json({
+      message: "Connection was reset. Please try again.",
+      error: process.env.NODE_ENV === "development" ? err.message : undefined,
+    });
+  }
+  next(err);
 });
 
 module.exports = app;
