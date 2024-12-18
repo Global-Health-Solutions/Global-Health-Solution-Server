@@ -6,6 +6,7 @@ const axios = require("axios");
 // const apiUrl = "https://aiconsultdemo.onrender.com/predict_disease";
 const apiUrl = "https://diseasepredictionsystem-3lfy.onrender.com/ask";
 
+
 router.post("/predict_disease", async (req, res) => {
   console.log("I'm Here!");
   try {
