@@ -3,6 +3,7 @@ const User = require("../models/User");
 const generateToken = require("../utils/generateToken");
 const verifyRecaptcha = require("../utils/recaptcha");
 const sendEmail = require("../utils/sendEmail");
+const getPasswordResetTemplate = require('../templates/passwordResetTemplate');
 const crypto = require("crypto");
 const path = require("path");
 
@@ -232,26 +233,23 @@ const forgotPassword = asyncHandler(async (req, res) => {
   const user = await User.findOne({ email });
 
   if (!user) {
-    res.status(400);
+    res.status(400).json({ message: "User not found" });
     throw new Error("User not found");
   }
 
   const resetToken = user.generatePasswordResetToken();
   await user.save();
 
-  const resetUrl = `${req.protocol}://${req.get(
-    "host"
-  )}/reset-password/${resetToken}`;
-
+  const resetUrl = `${req.protocol}://${process.env.FRONTEND_URL}/auth/reset-password/${resetToken}`;
   const text = `Click this link to reset your password: ${resetUrl}`;
-  const html = `<p>Click this link to reset your password: <a href="${resetUrl}">${resetUrl}</a></p>`;
+  const html = getPasswordResetTemplate(resetUrl);
+  
   await sendEmail({
     to: user.email,
-    subject: "Password Reset Request",
+    subject: "Password Reset Request - Global Health Solutions",
     text,
     html,
   });
-
   res.status(200).json({
     message: "Password reset email sent",
   });
@@ -273,7 +271,7 @@ const resetPassword = asyncHandler(async (req, res) => {
   });
 
   if (!user) {
-    res.status(400);
+    res.status(400).json({ message: "Invalid or expired password reset token" });;
     throw new Error("Invalid or expired password reset token");
   }
 
