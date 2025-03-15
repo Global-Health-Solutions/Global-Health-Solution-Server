@@ -1,6 +1,6 @@
 # Global Health Solution Server
 
-This is the backend server for the Global Health Solution application. It provides various APIs for user management, appointments, calls, blogs, and more.
+This is the backend server for the Global Health Solution application, providing a comprehensive API for telemedicine and healthcare management.
 
 ## Table of Contents
 
@@ -10,31 +10,34 @@ This is the backend server for the Global Health Solution application. It provid
    - [Base URL](#base-url)
    - [Authentication](#authentication)
    - [Error Handling](#error-handling)
-   - [Endpoints](#endpoints)
+   - [API Endpoints](#api-endpoints)
      - [User Management](#user-management)
      - [Appointments](#appointments)
      - [Calls](#calls)
+     - [Medical Files](#medical-files)
      - [Blogs](#blogs)
-     - [Admin](#admin)
-     - [Payment](#payment)
+     - [Notifications](#notifications)
+     - [Payments](#payments)
      - [Chatbot](#chatbot)
-4. [Websocket Events](#websocket-events)
+     - [Profile Images](#profile-images)
+4. [WebSocket Events](#websocket-events)
 5. [Contributing](#contributing)
 6. [License](#license)
 
 ## Getting Started
 
-To get started with this project, follow these steps:
+To get started with this project:
 
 1. Clone the repository
 2. Install dependencies: `npm install`
-3. Set up environment variables (see [Environment Variables](#environment-variables))
+3. Set up environment variables (see below)
 4. Run the server: `npm run dev`
 
 ## Environment Variables
 
-Create a `.env` file in the root directory and add the following variables:
+Create a `.env` file in the root directory with these variables:
 
+```env
 PORT=5000
 MONGO_URI=your_mongodb_connection_string
 JWT_SECRET=your_jwt_secret
@@ -44,485 +47,391 @@ RECAPTCHA_SECRET_KEY=your_recaptcha_secret_key
 AGORA_APP_ID=your_agora_app_id
 AGORA_APP_CERTIFICATE=your_agora_app_certificate
 SENDGRID_API_KEY=your_sendgrid_api_key
+```
 
 ## API Documentation
 
 ### Base URL
 
-All API requests should be made to: `http://localhost:5000/api` (replace with your production URL when deployed)
+```
+http://localhost:5000/api
+```
+
+Replace with your production URL when deployed.
 
 ### Authentication
 
 Most endpoints require authentication. Include the JWT token in the Authorization header:
 
+```
 Authorization: Bearer <your_token_here>
+```
 
 ### Error Handling
 
-Errors are returned in the following format:
+All errors follow this format:
 
-json
-
+```json
 {
-"message": "Error message here"
+  "message": "Error description here"
 }
+```
 
-### Endpoints
+Common HTTP status codes:
+- 400: Bad Request
+- 401: Unauthorized
+- 403: Forbidden
+- 404: Not Found
+- 500: Internal Server Error
+
+### API Endpoints
 
 #### User Management
 
 ##### Register User
-
-- **URL:** `/users/register`
-- **Method:** `POST`
-- **Auth required:** No
-- **Data constraints:**
-
-json
-
-{
-"role": "[user|specialist]",
-"firstName": "string",
-"lastName": "string",
-"dateOfBirth": "YYYY-MM-DD",
-"gender": "string",
-"address": "string",
-"country": "string",
-"email": "string",
-"phone": "string",
-"password": "string",
-"agreeTerms": "boolean",
-"recaptcha": "string",
-"specialistCategory": "string (required for specialists)",
-"isOnline": "boolean (for specialists)",
-"doctorRegistrationNumber": "string (for specialists)"
-}
-
-- **Success Response:** `201 Created`
+- **URL:** `POST /api/users/register`
+- **Auth:** No
+- **File Upload:** Yes (multipart/form-data)
+- **Body:**
+  ```json
+  {
+    "role": "user|specialist",
+    "firstName": "string",
+    "lastName": "string",
+    "dateOfBirth": "YYYY-MM-DD",
+    "gender": "string",
+    "address": "string",
+    "country": "string",
+    "email": "string",
+    "phone": "string",
+    "password": "string",
+    "agreeTerms": "boolean",
+    "recaptcha": "string",
+    "profileImage": "file (optional)",
+    "specialistCategory": "string (required for specialists)",
+    "currentPracticingLicense": "file (required for specialists)",
+    "isOnline": "boolean (for specialists)",
+    "doctorRegistrationNumber": "string (for specialists)"
+  }
+  ```
+- **Response:** `201 Created`
+  ```json
+  {
+    "token": "JWT_TOKEN",
+    "user": {
+      "_id": "string",
+      "firstName": "string",
+      "lastName": "string",
+      "email": "string",
+      "role": "string",
+      "isVerified": false
+    }
+  }
+  ```
 
 ##### Verify OTP
-
-- **URL:** `/users/verify-otp`
-- **Method:** `POST`
-- **Auth required:** No
-- **Data constraints:**
-
-json
-
-{
-"email": "string",
-"otp": "string"
-}
-
-- **Success Response:** `200 OK`
-
-##### Resend OTP
-
-- **URL:** `/users/resend-otp`
-- **Method:** `POST`
-- **Auth required:** No
-- **Data constraints:**
-
-json
-
-{
-"email": "string"
-}
-
-- **Success Response:** `200 OK`
+- **URL:** `POST /api/users/verify-otp`
+- **Auth:** No
+- **Body:**
+  ```json
+  {
+    "email": "string",
+    "otp": "string"
+  }
+  ```
+- **Response:** `200 OK`
 
 ##### Login
-
-- **URL:** `/users/login`
-- **Method:** `POST`
-- **Auth required:** No
-- **Data constraints:**
-
-json
-
-{
-"email": "string",
-"password": "string"
-}
-
-- **Success Response:** `200 OK`
-
-##### Forgot Password
-
-- **URL:** `/users/forgot-password`
-- **Method:** `POST`
-- **Auth required:** No
-- **Data constraints:**
-
-json
-
-{
-"email": "string"
-}
-
-- **Success Response:** `200 OK`
-
-##### Login
-
-- **URL:** `/users/login`
-- **Method:** `POST`
-- **Auth required:** No
-- **Data constraints:**
-
-json
-
-{
-"email": "string",
-"password": "string"
-}
-
-- **Success Response:** `200 OK`
-
-##### Forgot Password
-
-- **URL:** `/users/forgot-password`
-- **Method:** `POST`
-- **Auth required:** No
-- **Data constraints:**
-
-json
-
-{
-"email": "string"
-}
-
-- **Success Response:** `200 OK`
-
-##### Reset Password
-
-- **URL:** `/users/reset-password/:token`
-- **Method:** `POST`
-- **Auth required:** No
-- **Data constraints:**
-
-json
-
-{
-"password": "string"
-}
-
-- **Success Response:** `200 OK`
+- **URL:** `POST /api/users/login`
+- **Auth:** No
+- **Body:**
+  ```json
+  {
+    "email": "string",
+    "password": "string"
+  }
+  ```
+- **Response:** `200 OK`
+  ```json
+  {
+    "token": "JWT_TOKEN",
+    "user": {
+      "_id": "string",
+      "firstName": "string",
+      "lastName": "string",
+      "email": "string",
+      "role": "string"
+    }
+  }
+  ```
 
 ##### Get User Profile
-
-- **URL:** `/users/profile`
-- **Method:** `GET`
-- **Auth required:** Yes
-- **Success Response:** `200 OK`
+- **URL:** `GET /api/users/profile`
+- **Auth:** Required
+- **Response:** `200 OK`
+  ```json
+  {
+    "user": {
+      "_id": "string",
+      "firstName": "string",
+      "lastName": "string",
+      "email": "string",
+      "role": "string",
+      "profileImage": "string",
+      "specialistCategory": "string",
+      "availability": []
+    }
+  }
+  ```
 
 ##### Update User Profile
+- **URL:** `PUT /api/users/profile`
+- **Auth:** Required
+- **File Upload:** Yes (multipart/form-data)
+- **Body:** Any user fields to update
+- **Response:** `200 OK`
 
-- **URL:** `/users/profile`
-- **Method:** `PUT`
-- **Auth required:** Yes
-- **Data constraints:** (All fields are optional)
-
-json
-
-{
-"firstName": "string",
-"lastName": "string",
-"dateOfBirth": "YYYY-MM-DD",
-"gender": "string",
-"address": "string",
-"country": "string",
-"email": "string",
-"phone": "string",
-"password": "string",
-"specialistCategory": "string",
-"isOnline": "boolean"
-}
-
-- **Success Response:** `200 OK`
-
-##### Update User Availability (Toggle Online Status)
-
-- **URL:** `/users/availability`
-- **Method:** `PUT`
-- **Auth required:** Yes
-- **Description:** Toggles the user's online status
-- **Success Response:** `200 OK`
-
-##### Update Specialist Availability Schedule
-
-- **URL:** `/users/update-availability`
-- **Method:** `PUT`
-- **Auth required:** Yes
-- **Data constraints:**
-
-```json
-{
-  "availability": [
-    {
-      "day": "string",
-      "startTime": "HH:mm",
-      "endTime": "HH:mm"
-    }
-  ]
-}
-```
-
-- **Success Response:** `200 OK`
+##### Update Availability (Specialists)
+- **URL:** `PUT /api/users/availability`
+- **Auth:** Required
+- **Body:**
+  ```json
+  {
+    "availability": [
+      {
+        "day": "string",
+        "startTime": "HH:mm",
+        "endTime": "HH:mm"
+      }
+    ]
+  }
+  ```
+- **Response:** `200 OK`
 
 #### Appointments
 
 ##### Create Appointment
-
-- **URL:** `/appointments`
-- **Method:** `POST`
-- **Auth required:** Yes
-- **Data constraints:**
-
-json
-
-{
-"specialistId": "string",
-"dateTime": "YYYY-MM-DDTHH:mm:ss.sssZ",
-"specialistCategory": "string",
-"notes": "string"
-}
-
-- **Success Response:** `201 Created`
+- **URL:** `POST /api/appointments`
+- **Auth:** Required
+- **Body:**
+  ```json
+  {
+    "specialistId": "string",
+    "date": "YYYY-MM-DD",
+    "time": "HH:mm",
+    "type": "string",
+    "description": "string"
+  }
+  ```
+- **Response:** `201 Created`
 
 ##### Get Appointments
-
-- **URL:** `/appointments`
-- **Method:** `GET`
-- **Auth required:** Yes
-- **Success Response:** `200 OK`
+- **URL:** `GET /api/appointments`
+- **Auth:** Required
+- **Query Parameters:**
+  - status: pending|confirmed|completed|cancelled
+  - role: user|specialist
+- **Response:** `200 OK`
 
 ##### Update Appointment
-
-- **URL:** `/appointments/:id`
-- **Method:** `PUT`
-- **Auth required:** Yes
-- **Data constraints:**
-
-json
-
-{
-"status": "string",
-"notes": "string"
-}
-
-- **Success Response:** `200 OK`
+- **URL:** `PUT /api/appointments/:id`
+- **Auth:** Required
+- **Body:**
+  ```json
+  {
+    "status": "string",
+    "notes": "string"
+  }
+  ```
+- **Response:** `200 OK`
 
 ##### Start Appointment
+- **URL:** `POST /api/appointments/:id/start`
+- **Auth:** Required
+- **Response:** `200 OK`
+  ```json
+  {
+    "channelName": "string",
+    "token": "string"
+  }
+  ```
 
-- **URL:** `/appointments/:id/start`
-- **Method:** `POST`
-- **Auth required:** Yes
-- **Success Response:** `200 OK`
-- **Response body:**
+#### Medical Files
 
-```json
-{
-  "channelName": "string",
-  "token": "string"
-}
-```
+##### Upload Medical File
+- **URL:** `POST /api/medical-files`
+- **Auth:** Required
+- **File Upload:** Yes (multipart/form-data)
+- **Body:**
+  ```json
+  {
+    "title": "string",
+    "description": "string",
+    "file": "file"
+  }
+  ```
+- **Response:** `201 Created`
 
-#### Calls
-
-##### Initiate Call
-
-- **URL:** `/calls/initiate`
-- **Method:** `POST`
-- **Auth required:** Yes
-- **Data constraints:**
-
-json
-
-{
-"appointmentId": "string"
-}
-
-- **Success Response:** `200 OK`
-
-##### Accept Call
-
-- **URL:** `/calls/accept`
-- **Method:** `POST`
-- **Auth required:** Yes
-- **Data constraints:**
-
-json
-
-{
-"callId": "string"
-}
-
-- **Success Response:** `200 OK`
-
-##### Get Call
-
-- **URL:** `/calls/get-call/:callId`
-- **Method:** `GET`
-- **Auth required:** Yes
-- **Success Response:** `200 OK`
-
-##### Get Calls
-
-- **URL:** `/calls/get-calls`
-- **Method:** `GET`
-- **Auth required:** Yes
-- **Query Parameters:**
-  - `userId`: string
-  - `specialistId`: string
-  - `status`: string
-  - `specialistCategory`: string
-  - `startDate`: YYYY-MM-DD
-  - `endDate`: YYYY-MM-DD
-- **Success Response:** `200 OK`
-
-##### Update Call Status
-
-- **URL:** `/calls/:callId/status`
-- **Method:** `PATCH`
-- **Auth required:** Yes
-- **Data constraints:**
-
-```json
-{
-  "status": "string"
-}
-```
-
-- **Success Response:** `200 OK`
-
-#### Blogs
-
-##### Create Blog
-
-- **URL:** `/blogs`
-- **Method:** `POST`
-- **Auth required:** Yes
-- **Data constraints:**
-
-json
-
-{
-"title": "string",
-"content": "string",
-"tags": "string (comma-separated)",
-"isPublished": "boolean"
-}
-
-- **Success Response:** `201 Created`
-
-##### Get Blogs
-
-- **URL:** `/blogs`
-- **Method:** `GET`
-- **Auth required:** No
-- **Success Response:** `200 OK`
-
-##### Get Blog by ID
-
-- **URL:** `/blogs/:id`
-- **Method:** `GET`
-- **Auth required:** No
-- **Success Response:** `200 OK`
-
-##### Update Blog
-
-- **URL:** `/blogs/:id`
-- **Method:** `PUT`
-- **Auth required:** Yes
-- **Data constraints:**
-
-json
-
-{
-"title": "string",
-"content": "string",
-"tags": "string (comma-separated)",
-"isPublished": "boolean"
-}
-
-- **Success Response:** `200 OK`
-
-##### Delete Blog
-
-- **URL:** `/blogs/:id`
-- **Method:** `DELETE`
-- **Auth required:** Yes
-- **Success Response:** `200 OK`
-
-#### Admin
-
-##### Register Admin
-
-- **URL:** `/admin/register`
-- **Method:** `POST`
-- **Auth required:** No
-- **Data constraints:**
-
-json
-
-{
-"firstName": "string",
-"lastName": "string",
-"email": "string",
-"adminPassword": "string"
-}
-
-- **Success Response:** `201 Created`
-
-##### Admin Login
-
-- **URL:** `/admin/login`
-- **Method:** `POST`
-- **Auth required:** No
-- **Data constraints:**
-
-json
-
-{
-"email": "string",
-"password": "string"
-}
-
-- **Success Response:** `200 OK`
+##### Get Medical Files
+- **URL:** `GET /api/medical-files`
+- **Auth:** Required
+- **Response:** `200 OK`
 
 #### Notifications
 
 ##### Get Notifications
+- **URL:** `GET /api/notifications`
+- **Auth:** Required
+- **Response:** `200 OK`
+  ```json
+  {
+    "notifications": [
+      {
+        "_id": "string",
+        "type": "string",
+        "message": "string",
+        "read": "boolean",
+        "createdAt": "date"
+      }
+    ]
+  }
+  ```
 
-- **URL:** `/notifications`
-- **Method:** `GET`
-- **Auth required:** Yes
-- **Success Response:** `200 OK`
-- **Response body:** Array of notification objects
+#### Payments
 
-##### Mark Notification as Read
+##### Create Payment Intent
+- **URL:** `POST /api/payments/create-payment-intent`
+- **Auth:** Required
+- **Body:**
+  ```json
+  {
+    "amount": "number",
+    "currency": "string",
+    "appointmentId": "string"
+  }
+  ```
+- **Response:** `200 OK`
+  ```json
+  {
+    "clientSecret": "string"
+  }
+  ```
 
-- **URL:** `/notifications/:id/read`
-- **Method:** `PUT`
-- **Auth required:** Yes
-- **Success Response:** `200 OK`
-- **Response body:** Updated notification object
+#### Chatbot
 
-Note: Notifications are automatically created for various events such as new appointments, messages, and system updates. The `createNotification` function is used internally to create notifications for various events. It also emits a `newNotification` event via Socket.IO to the user's notification room.
+##### Disease Prediction
+- **URL:** `POST /api/chatbot/predict_disease`
+- **Auth:** No
+- **Body:**
+  ```json
+  {
+    "question": "string"
+  }
+  ```
+- **Description:** Send user symptoms or health-related questions to get AI-powered disease predictions and medical advice
+- **Response:** `200 OK`
+  ```json
+  {
+    "response": "string" // AI-generated response with disease prediction and advice
+  }
+  ```
+- **Error Response:** `500 Internal Server Error`
+  ```json
+  {
+    "message": "An error occurred while processing your request."
+  }
+  ```
+- **Example Usage:**
+  ```json
+  // Request
+  {
+    "question": "I have a fever, headache, and sore throat. What could it be?"
+  }
 
-#### Websocket Events
+  // Response
+  {
+    "response": "Based on your symptoms (fever, headache, and sore throat), 
+                 you may have an upper respiratory infection. However, these 
+                 symptoms could also indicate other conditions. Please consult 
+                 a healthcare provider for an accurate diagnosis..."
+  }
+  ```
+- **Note:** This endpoint connects to an AI-powered disease prediction system. The responses are generated by AI and should not be considered as a replacement for professional medical advice.
 
-The server uses Socket.IO for real-time communication. Here are the available events:
+#### Profile Images
 
-- `notification_${userId}`: Join a room for receiving user-specific notifications
-- `join`: Join a room with the user's ID
-- `callInitiated`: Emitted when a call is initiated
-- `incomingCall`: Received when there's an incoming call
-- `callAccepted`: Emitted and received when a call is accepted
-- `callRejected`: Emitted and received when a call is rejected
-- `callEnded`: Emitted and received when a call ends
-- `newNotification`: Received when a new notification is created for the user
+##### Get Profile Image
+- **URL:** `GET /uploads/profile-images/:filename`
+- **Auth:** No
+- **Description:** Profile images are served as static files. The complete URL will be provided in the user object's `profileImage` field.
+- **Example:**
+  ```json
+  {
+    "user": {
+      "profileImage": "/uploads/profile-images/user-123456-1234567890.jpg"
+      // ... other user fields
+    }
+  }
+  ```
+- **Note:** To display a profile image, simply append the `profileImage` path to your base URL.
+  Example: `http://localhost:5000/uploads/profile-images/user-123456-1234567890.jpg`
 
-#### License
+##### Upload Profile Image
+Profile images can be uploaded through the user registration or profile update endpoints using `multipart/form-data`.
+The file field should be named `profileImage`.
 
-This project is licensed under the [MIT License](LICENSE).
+#### WebSocket Events
+
+The server uses WebSocket for real-time features. Connect to:
+```
+ws://localhost:5000
+```
+
+Events:
+- `appointment_update`: Appointment status changes
+- `new_notification`: New notification received
+- `call_status`: Video call status updates
+
+Example WebSocket message format:
+```json
+{
+  "type": "appointment_update",
+  "data": {
+    "appointmentId": "string",
+    "status": "string",
+    "timestamp": "date"
+  }
+}
+```
+
+## File Upload Specifications
+
+- Profile Images:
+  - Formats: jpeg, jpg, png
+  - Max size: 5MB
+
+- Medical Files:
+  - Formats: pdf, doc, docx, jpg, jpeg, png
+  - Max size: 10MB
+
+- License Documents:
+  - Formats: pdf, doc, docx, jpg, jpeg
+  - Max size: 5MB
+
+## Best Practices
+
+1. Always include the Authorization header for authenticated endpoints
+2. Handle file uploads using multipart/form-data
+3. Implement proper error handling for all API calls
+4. Use WebSocket connection for real-time features
+5. Validate file types and sizes before upload
+
+## Rate Limiting
+
+The API implements rate limiting:
+- 100 requests per IP per 15 minutes for public endpoints
+- 1000 requests per IP per 15 minutes for authenticated endpoints
+
+## Support
+
+For API support or questions, please contact the development team or open an issue in the repository.
