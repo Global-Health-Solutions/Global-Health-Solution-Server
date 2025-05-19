@@ -17,6 +17,7 @@ const multer = require("multer");
 const path = require("path");
 const router = express.Router();
 const fs = require("fs");
+const User = require("../models/User");
 
 const projectRoot = path.resolve(__dirname, "..");
 const uploadProfileDir = path.join(projectRoot, "uploads", "profile-images");
@@ -167,5 +168,20 @@ router.put("/update-availability", protect, updateAvailability);
 router.put("/availability", protect, updateAvailability);
 
 router.get("/specialists/available/:category", protect, getAvailableSpecialist);
+
+// New endpoint to get all approved specialists - this should be publicly accessible
+router.get("/specialists", async (req, res) => {
+  try {
+    const specialists = await User.find({ 
+      role: "specialist",
+      isApproved: true
+    }).select('-password -resetPasswordToken -resetPasswordExpire -confirmationCode -otpExpiration');
+    
+    res.json({ success: true, data: specialists });
+  } catch (error) {
+    console.error("Error fetching specialists:", error);
+    res.status(500).json({ success: false, message: "Failed to fetch specialists" });
+  }
+});
 
 module.exports = router;

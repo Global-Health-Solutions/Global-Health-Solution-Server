@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 const crypto = require("crypto");
 
 const userSchema = new mongoose.Schema(
@@ -7,22 +8,54 @@ const userSchema = new mongoose.Schema(
     role: {
       type: String,
       enum: ["user", "specialist", "admin"],
-      required: true,
+      default: "user",
     },
-    firstName: { type: String, required: true },
-    lastName: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
+    firstName: {
+      type: String,
+      required: [true, "Please add a first name"],
+      trim: true,
+    },
+    lastName: {
+      type: String,
+      required: [true, "Please add a last name"],
+      trim: true,
+    },
+    email: {
+      type: String,
+      required: [true, "Please add an email"],
+      unique: true,
+      match: [
+        /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/,
+        "Please add a valid email",
+      ],
+    },
+    password: {
+      type: String,
+      required: [true, "Please add a password"],
+      minlength: 6,
+      select: false,
+    },
     adminPassword: { type: String },
     dateOfBirth: { type: Date },
     gender: { type: String },
-    address: { type: String },
+    address: {
+      street: String,
+      city: String,
+      state: String,
+      zipCode: String,
+      country: String,
+    },
     country: { type: String },
     phone: { type: String },
     agreeTerms: { type: Boolean, default: false },
     practicingLicense: { type: String },
     doctorRegistrationNumber: { type: String },
-    isApproved: { type: Boolean, default: false },
+    isApproved: {
+      type: Boolean,
+      default: function () {
+        return this.role !== "specialist";
+      },
+    },
     isEmailVerified: { type: Boolean, default: false },
     loginTime: { type: Date, default: Date.now },
     otp: { type: String },
@@ -31,7 +64,12 @@ const userSchema = new mongoose.Schema(
     resetPasswordExpires: { type: Date },
     isOnline: { type: Boolean, default: false },
     profileImage: { type: String },
-    specialistCategory: { type: String },
+    specialistCategory: {
+      type: String,
+      required: function () {
+        return this.role === "specialist";
+      },
+    },
     availability: [
       {
         day: {
@@ -51,11 +89,15 @@ const userSchema = new mongoose.Schema(
       },
     ],
     lastActiveTime: { type: Date, default: Date.now },
+    phoneNumber: {
+      type: String,
+      required: [true, "Please add a phone number"],
+    },
   },
   { timestamps: true }
 );
 
-// Hash password before saving
+// Encrypt password using bcrypt
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password") && !this.isModified("adminPassword")) {
     return next();
@@ -68,7 +110,14 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
-// Compare password
+// Sign JWT and return
+userSchema.methods.getSignedJwtToken = function () {
+  return jwt.sign({ id: this._id }, process.env.JWT_SECRET, {
+    expiresIn: process.env.JWT_EXPIRE,
+  });
+};
+
+// Match user entered password to hashed password in database
 userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };

@@ -21,9 +21,12 @@ const protect = asyncHandler(async (req, res, next) => {
           .json({ message: "Not authorized, user not found" });
       }
 
-      // Update lastActiveTime
-      req.user.lastActiveTime = new Date();
-      await req.user.save();
+      // Update lastActiveTime without triggering validation
+      await User.findByIdAndUpdate(
+        decoded.id,
+        { lastActiveTime: new Date() },
+        { runValidators: false, new: false }
+      );
 
       next();
     } catch (error) {
