@@ -1,17 +1,32 @@
 const Notification = require("../models/Notification");
 
-const createNotification = async (userId, title, message, type, relatedId = null) => {
-  const notification = new Notification({
-    user: userId,
-    title,
-    message,
-    type,
-    relatedId,
-    isRead: false,
-  });
+const createNotification = async (userId, title, message, type, relatedId = null, data = {}) => {
+  try {
+    const notification = new Notification({
+      user: userId,
+      title,
+      message,
+      type,
+      relatedId,
+      data,
+      isRead: false,
+    });
 
-  await notification.save();
-  return notification;
+    await notification.save();
+    
+    // Try to emit socket notification, but don't fail if socket is not available
+    try {
+      const io = require("../utils/socket").getIO();
+      io.to(`notification_${userId}`).emit("newNotification", notification);
+    } catch (socketError) {
+      console.log("Socket notification failed (socket may not be configured):", socketError.message);
+    }
+    
+    return notification;
+  } catch (error) {
+    console.error("Error creating notification:", error);
+    throw error;
+  }
 };
 
 const createAppointmentNotification = async (appointment, user, type) => {
@@ -43,7 +58,8 @@ const createAppointmentNotification = async (appointment, user, type) => {
     title,
     message,
     "appointment",
-    appointment._id
+    appointment._id,
+    { appointmentId: appointment._id }
   );
 };
 

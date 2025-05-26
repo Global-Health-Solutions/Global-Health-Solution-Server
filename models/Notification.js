@@ -10,11 +10,19 @@ const notificationSchema = new mongoose.Schema(
     type: {
       type: String,
       required: true,
-      enum: ["appointment", "message", "system"],
+      enum: ["appointment", "message", "system", "reminder"],
+    },
+    title: {
+      type: String,
+      required: true,
+    },
+    message: {
+      type: String,
+      required: true,
     },
     content: {
       type: String,
-      required: true,
+      // Keep for backward compatibility
     },
     isRead: {
       type: Boolean,
@@ -27,6 +35,10 @@ const notificationSchema = new mongoose.Schema(
     onModel: {
       type: String,
       enum: ["Appointment", "Message"],
+    },
+    data: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
     },
   },
   { timestamps: true }
