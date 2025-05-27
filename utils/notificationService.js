@@ -1,4 +1,5 @@
 const Notification = require("../models/Notification");
+const { sendAppointmentConfirmation } = require("./emailService");
 
 const createNotification = async (userId, title, message, type, relatedId = null, data = {}) => {
   try {
@@ -31,36 +32,88 @@ const createNotification = async (userId, title, message, type, relatedId = null
 
 const createAppointmentNotification = async (appointment, user, type) => {
   let title, message;
+  const isPatient = user._id.toString() === appointment.patient.toString();
+  const isDoctor = user._id.toString() === appointment.specialist.toString();
+
+  // Get appointment details
+  const appointmentDate = new Date(appointment.dateTime);
+  const dateFormatted = appointmentDate.toLocaleDateString();
+  const timeFormatted = appointmentDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
   switch (type) {
     case "scheduled":
-      title = "New Appointment Scheduled";
-      message = `Your appointment with ${appointment.specialistCategory} has been scheduled for ${new Date(appointment.dateTime).toLocaleString()}`;
+      if (isPatient) {
+        title = "Appointment Confirmed";
+        message = `Your appointment with ${appointment.specialistCategory} has been scheduled for ${dateFormatted} at ${timeFormatted}`;
+      } else if (isDoctor) {
+        title = "New Appointment Request";
+        message = `New appointment scheduled with a patient for ${dateFormatted} at ${timeFormatted}`;
+      }
       break;
     case "reminder":
-      title = "Appointment Reminder";
-      message = `Reminder: You have an appointment with ${appointment.specialistCategory} on ${new Date(appointment.dateTime).toLocaleString()}`;
+      if (isPatient) {
+        title = "Appointment Reminder";
+        message = `Reminder: You have an appointment with ${appointment.specialistCategory} tomorrow at ${timeFormatted}`;
+      } else if (isDoctor) {
+        title = "Appointment Reminder";
+        message = `Reminder: You have an appointment with a patient tomorrow at ${timeFormatted}`;
+      }
       break;
     case "dayOf":
-      title = "Today's Appointment";
-      message = `You have an appointment with ${appointment.specialistCategory} today at ${new Date(appointment.dateTime).toLocaleTimeString()}`;
+      if (isPatient) {
+        title = "Today's Appointment";
+        message = `You have an appointment with ${appointment.specialistCategory} today at ${timeFormatted}`;
+      } else if (isDoctor) {
+        title = "Today's Appointment";
+        message = `You have an appointment with a patient today at ${timeFormatted}`;
+      }
       break;
     case "cancelled":
-      title = "Appointment Cancelled";
-      message = `Your appointment with ${appointment.specialistCategory} has been cancelled`;
+      if (isPatient) {
+        title = "Appointment Cancelled";
+        message = `Your appointment with ${appointment.specialistCategory} scheduled for ${dateFormatted} has been cancelled`;
+      } else if (isDoctor) {
+        title = "Appointment Cancelled";
+        message = `The appointment scheduled for ${dateFormatted} at ${timeFormatted} has been cancelled`;
+      }
+      break;
+    case "confirmed":
+      if (isPatient) {
+        title = "Appointment Confirmed";
+        message = `Your appointment with ${appointment.specialistCategory} for ${dateFormatted} at ${timeFormatted} has been confirmed`;
+      } else if (isDoctor) {
+        title = "Appointment Confirmed";
+        message = `You have confirmed the appointment for ${dateFormatted} at ${timeFormatted}`;
+      }
       break;
     default:
       return null;
   }
 
-  return await createNotification(
+  console.log(`Creating notification for ${isPatient ? 'patient' : 'doctor'}: ${title} - ${message}`);
+
+  // Create in-app notification
+  const notification = await createNotification(
     user._id,
     title,
     message,
     "appointment",
     appointment._id,
-    { appointmentId: appointment._id }
+    { appointmentId: appointment._id, type }
   );
+
+  // Send email notification for important events
+  if (type === "scheduled" || type === "confirmed" || type === "cancelled") {
+    try {
+      await sendAppointmentConfirmation(appointment, user);
+      console.log(`✅ Email notification sent to ${user.email} for appointment ${type}`);
+    } catch (emailError) {
+      console.error(`❌ Failed to send email notification to ${user.email}:`, emailError.message);
+      // Don't fail the entire notification process if email fails
+    }
+  }
+
+  return notification;
 };
 
 const markNotificationAsRead = async (notificationId) => {

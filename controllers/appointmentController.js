@@ -758,6 +758,107 @@ const getDoctorAvailabilityRange = async (req, res) => {
   }
 };
 
+// Update appointment status (confirm/cancel by doctor)
+const updateAppointmentStatus = async (req, res) => {
+  try {
+    const { appointmentId, status, reason } = req.body;
+    const doctorId = req.user._id;
+
+    // Validate status
+    if (!['confirmed', 'cancelled'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid status. Must be 'confirmed' or 'cancelled'",
+      });
+    }
+
+    // Find the appointment
+    const appointment = await Appointment.findById(appointmentId)
+      .populate('patient', 'firstName lastName email')
+      .populate('specialist', 'firstName lastName email');
+
+    if (!appointment) {
+      return res.status(404).json({
+        success: false,
+        message: "Appointment not found",
+      });
+    }
+
+    // Check if the doctor is authorized to update this appointment
+    if (appointment.specialist._id.toString() !== doctorId.toString()) {
+      return res.status(403).json({
+        success: false,
+        message: "Not authorized to update this appointment",
+      });
+    }
+
+    // Update appointment status
+    appointment.status = status;
+    if (status === 'cancelled' && reason) {
+      appointment.cancellationReason = reason;
+      appointment.cancelledBy = 'doctor';
+    }
+    
+    await appointment.save();
+
+    console.log(`Appointment ${appointmentId} status updated to ${status} by doctor ${doctorId}`);
+
+    // Send notifications to patient
+    try {
+      const notificationType = status === 'confirmed' ? 'confirmed' : 'cancelled';
+      await createAppointmentNotification(appointment, appointment.patient, notificationType);
+      console.log(`Notification sent to patient for appointment ${status}`);
+    } catch (notificationError) {
+      console.error('Error sending notification to patient:', notificationError);
+    }
+
+    // Send email to patient
+    try {
+      if (status === 'confirmed') {
+        await sendAppointmentConfirmation(appointment, appointment.patient);
+      } else {
+        await sendAppointmentCancellation(appointment, appointment.patient);
+      }
+      console.log(`Email sent to patient for appointment ${status}`);
+    } catch (emailError) {
+      console.error('Error sending email to patient:', emailError);
+    }
+
+    // If cancelled, free up the time slot
+    if (status === 'cancelled') {
+      try {
+        const availability = await Availability.findById(appointment.availabilitySlot);
+        if (availability) {
+          const timeSlot = availability.timeSlots.find(
+            slot => slot.appointmentId && slot.appointmentId.toString() === appointmentId
+          );
+          if (timeSlot) {
+            timeSlot.isBooked = false;
+            timeSlot.appointmentId = null;
+            await availability.save();
+            console.log('Time slot freed up after cancellation');
+          }
+        }
+      } catch (availabilityError) {
+        console.error('Error updating availability after cancellation:', availabilityError);
+      }
+    }
+
+    res.status(200).json({
+      success: true,
+      data: appointment,
+      message: `Appointment ${status} successfully`,
+    });
+  } catch (error) {
+    console.error("Error updating appointment status:", error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating appointment status",
+      error: error.message,
+    });
+  }
+};
+
 module.exports = {
   setAvailability,
   getAvailableSlots,
@@ -767,4 +868,5 @@ module.exports = {
   getUserAppointments,
   getDoctorAvailability,
   getDoctorAvailabilityRange,
+  updateAppointmentStatus,
 };

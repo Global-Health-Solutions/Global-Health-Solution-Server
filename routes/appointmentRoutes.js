@@ -9,6 +9,7 @@ const {
   bookAppointment,
   cancelAppointment,
   getUserAppointments,
+  updateAppointmentStatus,
 } = require('../controllers/appointmentController');
 
 const router = express.Router();
@@ -17,6 +18,7 @@ const router = express.Router();
 router.post('/availability', protect, authorize('specialist'), setAvailability);
 router.get('/availability', protect, authorize('specialist'), getDoctorAvailability);
 router.get('/availability/range', protect, authorize('specialist'), getDoctorAvailabilityRange);
+router.put('/update-status', protect, authorize('specialist'), updateAppointmentStatus);
 
 // Patient routes
 router.get('/available-slots', protect, getAvailableSlots);

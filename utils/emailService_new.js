@@ -1,25 +1,17 @@
 const nodemailer = require("nodemailer");
 
-// Function to create transporter (ensures env vars are loaded)
-const createTransporter = () => {
-  console.log('Creating email transporter with credentials:', {
-    user: process.env.SMTP_USER || process.env.EMAIL_USER ? 'SET' : 'NOT SET',
-    pass: process.env.SMTP_PASS || process.env.EMAIL_PASS ? 'SET' : 'NOT SET'
-  });
-  
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: process.env.SMTP_USER || process.env.EMAIL_USER,
-      pass: process.env.SMTP_PASS || process.env.EMAIL_PASS,
-    },
-  });
-};
+// Create reusable transporter object using Gmail service
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.SMTP_USER || process.env.EMAIL_USER,
+    pass: process.env.SMTP_PASS || process.env.EMAIL_PASS,
+  },
+});
 
 // Test email configuration
 const testEmailConfiguration = async () => {
   try {
-    const transporter = createTransporter();
     await transporter.verify();
     console.log('✅ Email service is ready');
     return true;
@@ -38,7 +30,6 @@ const sendAppointmentConfirmation = async (appointment, user) => {
       return;
     }
 
-    const transporter = createTransporter();
     const isPatient = user._id.toString() === appointment.patient.toString();
     const appointmentDate = new Date(appointment.dateTime);
     
@@ -92,7 +83,6 @@ const sendAppointmentStatusUpdate = async (appointment, user, newStatus) => {
       return;
     }
 
-    const transporter = createTransporter();
     const isPatient = user._id.toString() === appointment.patient.toString();
     const appointmentDate = new Date(appointment.dateTime);
     
