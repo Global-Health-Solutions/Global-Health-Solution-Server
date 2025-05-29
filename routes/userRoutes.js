@@ -165,8 +165,6 @@ router.put("/availability", protect, updateUserAvailability);
 
 router.put("/update-availability", protect, updateAvailability);
 
-router.put("/availability", protect, updateAvailability);
-
 router.get("/specialists/available/:category", protect, getAvailableSpecialist);
 
 // New endpoint to get all approved specialists - this should be publicly accessible

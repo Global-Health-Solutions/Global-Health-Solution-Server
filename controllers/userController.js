@@ -402,43 +402,104 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   }
 });
 
-// Update user availability
+// Update user availability/online status
 const updateUserAvailability = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user._id);
+  try {
+    console.log('🔄 Updating user availability...');
+    console.log('User ID:', req.user._id);
+    console.log('Request body:', req.body);
 
-  if (user && user.role === "specialist") {
-    user.isOnline = !user.isOnline;
-    const updatedUser = await user.save();
+    const { isOnline } = req.body;
+    
+    // Find user first to validate
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+      console.log('❌ User not found');
+      return res.status(404).json({ 
+        success: false,
+        message: "User not found" 
+      });
+    }
+
+    if (user.role !== "specialist") {
+      console.log('❌ User is not a specialist');
+      return res.status(403).json({ 
+        success: false,
+        message: "Only specialists can update availability status" 
+      });
+    }
+
+    console.log('📊 Current user status:', { 
+      isOnline: user.isOnline, 
+      role: user.role,
+      lastActiveTime: user.lastActiveTime 
+    });
+
+    // If isOnline is provided in request, use it; otherwise toggle current status
+    const newOnlineStatus = isOnline !== undefined ? isOnline : !user.isOnline;
+    
+    // Prepare update object
+    const updateData = {
+      isOnline: newOnlineStatus
+    };
+    
+    // Update lastActiveTime when going online
+    if (newOnlineStatus) {
+      updateData.lastActiveTime = new Date();
+    }
+
+    console.log('💾 Updating user with:', updateData);
+    
+    // Use updateOne with $set to avoid validation issues
+    await User.updateOne(
+      { _id: req.user._id },
+      { $set: updateData }
+    );
+    
+    // Get the updated user
+    const updatedUser = await User.findById(req.user._id);
+    
+    console.log('✅ User updated successfully. New status:', updatedUser.isOnline);
 
     res.json({
-      _id: updatedUser._id,
-      role: updatedUser.role,
-      firstName: updatedUser.firstName,
-      lastName: updatedUser.lastName,
-      dateOfBirth: updatedUser.dateOfBirth,
-      gender: updatedUser.gender,
-      address: updatedUser.address,
-      country: updatedUser.country,
-      email: updatedUser.email,
-      phone: updatedUser.phone,
-      agreeTerms: updatedUser.agreeTerms,
-      practicingLicense: updatedUser.practicingLicense,
-      doctorRegistrationNumber: updatedUser.doctorRegistrationNumber,
-      isApproved: updatedUser.isApproved,
-      loginTime: updatedUser.loginTime,
-      isEmailVerified: updatedUser.isEmailVerified,
-      otp: updatedUser.otp,
-      otpExpires: updatedUser.otpExpires,
-      resetPasswordToken: updatedUser.resetPasswordToken,
-      resetPasswordExpires: updatedUser.resetPasswordExpires,
-      isOnline: updatedUser.isOnline,
-      specialistCategory: updatedUser.specialistCategory,
-      profileImage: updatedUser.profileImage,
-      token: generateToken(updatedUser._id),
+      success: true,
+      message: `Availability status updated to ${updatedUser.isOnline ? 'online' : 'offline'}`,
+      data: {
+        _id: updatedUser._id,
+        role: updatedUser.role,
+        firstName: updatedUser.firstName,
+        lastName: updatedUser.lastName,
+        dateOfBirth: updatedUser.dateOfBirth,
+        gender: updatedUser.gender,
+        address: updatedUser.address,
+        country: updatedUser.country,
+        email: updatedUser.email,
+        phone: updatedUser.phone,
+        agreeTerms: updatedUser.agreeTerms,
+        practicingLicense: updatedUser.practicingLicense,
+        doctorRegistrationNumber: updatedUser.doctorRegistrationNumber,
+        isApproved: updatedUser.isApproved,
+        loginTime: updatedUser.loginTime,
+        isEmailVerified: updatedUser.isEmailVerified,
+        otp: updatedUser.otp,
+        otpExpires: updatedUser.otpExpires,
+        resetPasswordToken: updatedUser.resetPasswordToken,
+        resetPasswordExpires: updatedUser.resetPasswordExpires,
+        isOnline: updatedUser.isOnline,
+        specialistCategory: updatedUser.specialistCategory,
+        profileImage: updatedUser.profileImage,
+        lastActiveTime: updatedUser.lastActiveTime,
+        token: generateToken(updatedUser._id),
+      }
     });
-  } else {
-    res.status(404);
-    throw new Error("User not found or not a specialist");
+  } catch (error) {
+    console.error('❌ Error updating user availability:', error);
+    res.status(500).json({
+      success: false,
+      message: "Error updating availability status",
+      error: error.message
+    });
   }
 });
 

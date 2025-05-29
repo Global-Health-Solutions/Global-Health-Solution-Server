@@ -91,7 +91,20 @@ const userSchema = new mongoose.Schema(
     lastActiveTime: { type: Date, default: Date.now },
     phoneNumber: {
       type: String,
-      required: [true, "Please add a phone number"],
+      required: function() {
+        // Only require phone number for new specialist registrations
+        return this.isNew && this.role === "specialist";
+      },
+      validate: {
+        validator: function(v) {
+          // If role is specialist and phoneNumber is provided, it should not be empty
+          if (this.role === "specialist" && v !== undefined) {
+            return v && v.trim().length > 0;
+          }
+          return true;
+        },
+        message: "Please add a valid phone number"
+      }
     },
   },
   { timestamps: true }
